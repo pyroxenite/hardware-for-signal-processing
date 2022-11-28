@@ -1,6 +1,6 @@
-#include "matrix-mult.h"
+#include "matrix.h"
 
-__host__ float* randomFlatMatrix(int n, int m, int max) {
+__host__ float* randomIntegerMatrix(int n, int m, int max) {
     float* mat = (float*) malloc(sizeof(int) * n * m);
     for (int i=0; i<n*m; i++) {
         mat[i] = rand() % max;
@@ -8,7 +8,16 @@ __host__ float* randomFlatMatrix(int n, int m, int max) {
     return mat;
 }
 
-__host__ void printFlatMatrix(float* mat, int n, int m) {
+__host__ float* randomMatrix(int n, int m) {
+    int max = 100000;
+    float* mat = (float*) malloc(sizeof(int) * n * m);
+    for (int i=0; i<n*m; i++) {
+        mat[i] = (rand() % max) / (float) max;
+    }
+    return mat;
+}
+
+__host__ void printMatrix(float* mat, int n, int m) {
     int l = n*m;
     printf("Matrix([\n");
     for (int i=0; i<l; i++) {
@@ -21,6 +30,31 @@ __host__ void printFlatMatrix(float* mat, int n, int m) {
         }
     }
     printf("])\n");
+}
+
+__host__ void displayMatrixAsAscii(float* mat, int n, int m) {
+    char levels[] = " .:;+=xX$&";
+    int l = n*m;
+    printf("@@@@");
+    for (int i=0; i<m+2; i++)
+        printf("@@");
+    printf("\n@@");
+    for (int i=0; i<m+2; i++)
+        printf("  ");
+    printf("@@\n@@  ");
+    for (int i=0; i<l; i++) {
+        float val = mat[i];
+        int lev = (int) (val * 10);
+        if (lev > 9) lev = 9;
+        if (lev < 0) lev = 0;
+        printf("%c%c", levels[lev], levels[lev]);
+        if (i % m == m-1) {
+            printf("  @@\n@@  ");
+        }
+    }
+    for (int i=0; i<m; i++)
+        printf("@@");
+    printf("@@\n");
 }
 
 __host__ void matrixMultCPU(float* mat1, float* mat2, float* result, int m, int n, int p) {

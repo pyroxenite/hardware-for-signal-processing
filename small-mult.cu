@@ -1,16 +1,16 @@
 // #include <stdio.h>
 // #include <stdlib.h>
 // #include <time.h>
-// #include "matrix-mult.h"
+// #include "matrix.h"
 
 // int main() {
 //     srand(time(NULL));
 
 //     uint m = 4, n = 4, p = 4;
 
-//     float* mat1 = randomFlatMatrix(m, n, 5);
-//     float* mat2 = randomFlatMatrix(n, p, 5);
-//     float* result = randomFlatMatrix(m, p, 1);
+//     float* mat1 = randomIntegerMatrix(m, n, 5);
+//     float* mat2 = randomIntegerMatrix(n, p, 5);
+//     float* result = randomIntegerMatrix(m, p, 1);
 
 //     float* mat1_gpu;
 //     float* mat2_gpu;
@@ -27,11 +27,11 @@
 //     cudaMemcpy(result, result_gpu, sizeof(float)*m*p, cudaMemcpyDeviceToHost);
 
 //     printf("mat1 = ");
-//     printFlatMatrix(mat1, m, n);
+//     printMatrix(mat1, m, n);
 //     printf("mat2 = ");
-//     printFlatMatrix(mat2, n, p);
+//     printMatrix(mat2, n, p);
 //     printf("result_gpu_1 = ");
-//     printFlatMatrix(result, m, p);
+//     printMatrix(result, m, p);
 
 //     dim3 mp = { m, p, 1 };
 //     matrixMult2<<<mp,1>>>(mat1_gpu, mat2_gpu, result_gpu, m, n, p);
@@ -39,11 +39,11 @@
 //     cudaMemcpy(result, result_gpu, sizeof(float)*m*p, cudaMemcpyDeviceToHost);
 
 //     printf("result_gpu_2 = ");
-//     printFlatMatrix(result, m, p);
+//     printMatrix(result, m, p);
 
 //     matrixMultCPU(mat1, mat2, result, m, n, p);
 //     printf("result_cpu = ");
-//     printFlatMatrix(result, m, p);
+//     printMatrix(result, m, p);
 
 //     cudaDeviceSynchronize();
 // 	return 0;
