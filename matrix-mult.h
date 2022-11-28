@@ -3,12 +3,12 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 
-__host__ int* randomFlatMatrix(int n, int m, int max);
+__host__ float* randomFlatMatrix(int n, int m, int max);
 
-__host__ void printFlatMatrix(int* mat, int n, int m);
+__host__ void printFlatMatrix(float* mat, int n, int m);
 
-__host__ void matrixMultCPU(int* mat1, int* mat2, int* result, int m, int n, int p);
+__host__ void matrixMultCPU(float* mat1, float* mat2, float* result, int m, int n, int p);
 
-__global__ void matrixMult(int* mat1, int* mat2, int* result, int m, int n, int p);
+__global__ void matrixMult(float* mat1, float* mat2, float* result, int m, int n, int p);
 
-__global__ void matrixMult2(int* mat1, int* mat2, int* result, int m, int n, int p);
+__global__ void matrixMult2(float* mat1, float* mat2, float* result, int m, int n, int p);

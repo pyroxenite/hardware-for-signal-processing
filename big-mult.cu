@@ -18,29 +18,29 @@ int main()
         printf("\n############# Testing m = %d, n = %d, p = %d #############\n", m, n, p);
         start = clock();
 
-        int *mat1 = randomFlatMatrix(m, n, 5);
-        int *mat2 = randomFlatMatrix(n, p, 5);
-        int *result = randomFlatMatrix(m, p, 1);
+        float* mat1 = randomFlatMatrix(m, n, 5);
+        float* mat2 = randomFlatMatrix(n, p, 5);
+        float* result = randomFlatMatrix(m, p, 1);
         end = clock();
         time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
         printf("Matrix init : %f s \n", time_used);
 
         start = clock();
 
-        int *mat1_gpu;
-        int *mat2_gpu;
-        int *result_gpu;
-        cudaMalloc(&mat1_gpu, sizeof(int) * m * n);
-        cudaMalloc(&mat2_gpu, sizeof(int) * n * p);
-        cudaMalloc(&result_gpu, sizeof(int) * m * p);
+        float* mat1_gpu;
+        float* mat2_gpu;
+        float* result_gpu;
+        cudaMalloc(&mat1_gpu, sizeof(float) * m * n);
+        cudaMalloc(&mat2_gpu, sizeof(float) * n * p);
+        cudaMalloc(&result_gpu, sizeof(float) * m * p);
         end = clock();
         time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
         gpu_tot += time_used;
         printf("cudamalloc : %f s \n", time_used);
 
         start = clock();
-        cudaMemcpy(mat1_gpu, mat1, sizeof(int) * m * n, cudaMemcpyHostToDevice);
-        cudaMemcpy(mat2_gpu, mat2, sizeof(int) * n * p, cudaMemcpyHostToDevice);
+        cudaMemcpy(mat1_gpu, mat1, sizeof(float) * m * n, cudaMemcpyHostToDevice);
+        cudaMemcpy(mat2_gpu, mat2, sizeof(float) * n * p, cudaMemcpyHostToDevice);
         end = clock();
         time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
         gpu_tot += time_used;
@@ -54,7 +54,7 @@ int main()
         printf("gpu mult : %f s \n", time_used);
         printf("gpu tot : %f s \n", gpu_tot);
 
-        cudaMemcpy(result, result_gpu, sizeof(int) * m * p, cudaMemcpyDeviceToHost);
+        cudaMemcpy(result, result_gpu, sizeof(float) * m * p, cudaMemcpyDeviceToHost);
 
         start = clock();
         matrixMultCPU(mat1, mat2, result, m, n, p);

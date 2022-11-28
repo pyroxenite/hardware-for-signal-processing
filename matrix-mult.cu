@@ -1,29 +1,29 @@
 #include "matrix-mult.h"
 
-__host__ int* randomFlatMatrix(int n, int m, int max) {
-    int* mat = (int*) malloc(sizeof(int) * n * m);
+__host__ float* randomFlatMatrix(int n, int m, int max) {
+    float* mat = (float*) malloc(sizeof(int) * n * m);
     for (int i=0; i<n*m; i++) {
         mat[i] = rand() % max;
     }
     return mat;
 }
 
-__host__ void printFlatMatrix(int* mat, int n, int m) {
+__host__ void printFlatMatrix(float* mat, int n, int m) {
     int l = n*m;
     printf("Matrix([\n");
     for (int i=0; i<l; i++) {
         if (i % m == 0) {
-            printf("  [ %2d,", mat[i]);
+            printf("  [ %4.1f,", mat[i]);
         } else if (i % m == m-1) {
-            printf(" %2d ],\n", mat[i]);
+            printf(" %4.1f ],\n", mat[i]);
         } else {
-            printf(" %2d,", mat[i]);
+            printf(" %4.1f,", mat[i]);
         }
     }
     printf("])\n");
 }
 
-__host__ void matrixMultCPU(int* mat1, int* mat2, int* result, int m, int n, int p) {
+__host__ void matrixMultCPU(float* mat1, float* mat2, float* result, int m, int n, int p) {
     int l = n*m;
     int i, j;
     for (int c=0; c<l; c++) {
@@ -36,7 +36,7 @@ __host__ void matrixMultCPU(int* mat1, int* mat2, int* result, int m, int n, int
     }
 }
 
-__global__ void matrixMult(int* mat1, int* mat2, int* result, int m, int n, int p) {
+__global__ void matrixMult(float* mat1, float* mat2, float* result, int m, int n, int p) {
     int i = threadIdx.x;
     int j = blockIdx.x;
     result[i*blockDim.x + j] = 0;
@@ -45,7 +45,7 @@ __global__ void matrixMult(int* mat1, int* mat2, int* result, int m, int n, int 
     }
 }
 
-__global__ void matrixMult2(int* mat1, int* mat2, int* result, int m, int n, int p) {
+__global__ void matrixMult2(float* mat1, float* mat2, float* result, int m, int n, int p) {
     int i = threadIdx.x;
     int j = threadIdx.y;
     result[i*blockDim.x + j] = 0;
