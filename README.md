@@ -1,2 +1,4 @@
-# hardware-for-signal-processing
-# hardware-for-signal-processing
+# Hardware for signal processing
+Pharoah Jardin & Pablo Dumenil
+
+nian nian nian
