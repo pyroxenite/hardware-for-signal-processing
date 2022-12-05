@@ -52,7 +52,11 @@ __host__ void displayMatrixAsAscii(float* mat, int n, int m) {
             printf("  @@\n@@  ");
         }
     }
-    for (int i=0; i<m; i++)
+
+    for (int i=0; i<m+1; i++)
+        printf("  ");
+    printf("@@\n@@");
+    for (int i=0; i<m+2; i++)
         printf("@@");
     printf("@@\n");
 }
