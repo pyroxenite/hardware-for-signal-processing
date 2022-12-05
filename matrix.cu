@@ -8,13 +8,22 @@ __host__ float* randomIntegerMatrix(int n, int m, int max) {
     return mat;
 }
 
-__host__ float* randomMatrix(int n, int m) {
+__host__ float* zeroArray(int length) {
+    float* mat = (float*) calloc(sizeof(float), length);
+    return mat;
+}
+
+__host__ float* randomArray(int length) {
     int max = 100000;
-    float* mat = (float*) malloc(sizeof(int) * n * m);
-    for (int i=0; i<n*m; i++) {
+    float* mat = (float*) malloc(sizeof(float) * length);
+    for (int i=0; i<length; i++) {
         mat[i] = (rand() % max) / (float) max;
     }
     return mat;
+}
+
+__host__ float* randomMatrix(int n, int m) {
+    return randomArray(n * m);
 }
 
 __host__ void printMatrix(float* mat, int n, int m) {
@@ -77,10 +86,11 @@ __host__ void matrixMultCPU(float* mat1, float* mat2, float* result, int m, int 
 __global__ void matrixMult(float* mat1, float* mat2, float* result, int m, int n, int p) {
     int i = threadIdx.x;
     int j = blockIdx.x;
-    result[i*blockDim.x + j] = 0;
+    float sum = 0;
     for (int k=0; k<n; k++) {
-        result[i*blockDim.x + j] += mat1[i*m + k] * mat2[k*n + j];
+        sum += mat1[i*m + k] * mat2[k*n + j];
     }
+    result[i*blockDim.x + j] = sum;
 }
 
 __global__ void matrixMult2(float* mat1, float* mat2, float* result, int m, int n, int p) {
@@ -91,4 +101,3 @@ __global__ void matrixMult2(float* mat1, float* mat2, float* result, int m, int 
         result[i*blockDim.x + j] += mat1[i*m + k] * mat2[k*n + j];
     }
 }
-

@@ -5,6 +5,10 @@
 
 __host__ float* randomIntegerMatrix(int n, int m, int max);
 
+__host__ float* zeroArray(int length);
+
+__host__ float* randomArray(int length);
+
 __host__ float* randomMatrix(int n, int m);
 
 __host__ void printMatrix(float* mat, int n, int m);
