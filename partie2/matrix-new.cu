@@ -119,17 +119,19 @@ __host__ void displayMatrixAsAscii(FloatMatrix* matrix) {
 }
 
 __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m, int im_n, int ker_m, int ker_n) {
-    int im_i = threadIdx.x;
-    int im_j = blockIdx.x;
-    int ker_i;
-    int ker_j;
+    int res_i = threadIdx.x;
+    int res_j = blockIdx.x;
+    int ker_i, ker_j;
+    int im_i, im_j;
     float sum = 0;
     for (int i=0; i<ker_m*ker_n; i++) {
         ker_i = i / ker_n;
         ker_j = i % ker_n,
-        sum += image[(im_i + ker_i)*im_n + (im_j + ker_j)] * kernal[ker_i*ker_n + ker_j];
+        im_i = res_i + ker_i;
+        im_j = res_j + ker_j;
+        sum += image[im_i*im_n + im_j] * kernal[ker_i*ker_n + ker_j];
     }
-    result[im_i*blockDim.x + im_j] = sum;
+    result[im_i*blockDim.y + im_j] = sum;
 }
 
 __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* result) {
