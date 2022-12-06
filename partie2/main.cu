@@ -24,43 +24,9 @@
 //     return 0;
 // }
 
-
-
-
-
-
-// int main() {
-//     srand(time(NULL));
-
-//     int im_size = 32;
-//     int ker_size = 6;
-//     int res_size = im_size - ker_size + 1;
-
-//     FloatMatrix* image = zeroMatrix(im_size, im_size);
-//     FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
-//     FloatMatrix* result = zeroMatrix(res_size, res_size);
-
-//     drawCircle(image, im_size/2.5, im_size/2.5, im_size/5.0, 0.4);
-//     drawCircle(image, 1.5*im_size/2.5, 1.5*im_size/2.5, im_size/5.0, 0.1);
-//     drawCircle(kernal, ker_size/2 - 0.5, ker_size/2 - 0.5, ker_size*2.0, 0.1);
-
-//     displayMatrixAsAscii(image);
-//     displayMatrixAsAscii(kernal);
-
-//     convolve(image, kernal, result);
-
-//     cudaDeviceSynchronize();
-
-//     displayMatrixAsAscii(result);
-//     return 0;
-// }
-
-
-int main() {
-    srand(time(NULL));
-
+void blurDemo() {
     int im_size = 32;
-    int ker_size = 3;
+    int ker_size = 6;
     int res_size = im_size - ker_size + 1;
 
     FloatMatrix* image = zeroMatrix(im_size, im_size);
@@ -69,6 +35,34 @@ int main() {
 
     drawCircle(image, im_size/2.5, im_size/2.5, im_size/5.0, 0.4);
     drawCircle(image, 1.5*im_size/2.5, 1.5*im_size/2.5, im_size/5.0, 0.1);
+    drawCircle(kernal, ker_size/2 - 0.5, ker_size/2 - 0.5, ker_size/2, 0.1);
+
+    displayMatrix(image);
+    displayMatrix(kernal);
+
+    convolve(image, kernal, result);
+
+    cudaDeviceSynchronize();
+
+    displayMatrix(result);
+
+    freeMatrix(image);
+    freeMatrix(kernal);
+    freeMatrix(result);
+}
+
+
+void sobelDemo() {
+    int im_size = 32;
+    int ker_size = 3;
+    int res_size = im_size - ker_size + 1;
+
+    FloatMatrix* image = zeroMatrix(im_size, im_size);
+    FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
+    FloatMatrix* result = zeroMatrix(res_size, res_size);
+
+    drawCircle(image, im_size/3, im_size/3, im_size/3.8, 0.4);
+    drawCircle(image, 2*im_size/3, 2*im_size/3, im_size/3.8, 0.1);
 
     for (int i=0; i<ker_size; i++) {
         for (int j=0; j<ker_size; j++) {
@@ -87,6 +81,19 @@ int main() {
 
     cudaDeviceSynchronize();
     displaySignedMatrix(result);
+
+    freeMatrix(image);
+    freeMatrix(kernal);
+    freeMatrix(result);
+}
+
+
+int main() {
+    srand(time(NULL));
+
+    sobelDemo();
+
+    //blurDemo();
     
     return 0;
 }
