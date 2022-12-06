@@ -24,24 +24,69 @@
 //     return 0;
 // }
 
+
+
+
+
+
+// int main() {
+//     srand(time(NULL));
+
+//     int im_size = 32;
+//     int ker_size = 6;
+//     int res_size = im_size - ker_size + 1;
+
+//     FloatMatrix* image = zeroMatrix(im_size, im_size);
+//     FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
+//     FloatMatrix* result = zeroMatrix(res_size, res_size);
+
+//     drawCircle(image, im_size/2.5, im_size/2.5, im_size/5.0, 0.4);
+//     drawCircle(image, 1.5*im_size/2.5, 1.5*im_size/2.5, im_size/5.0, 0.1);
+//     drawCircle(kernal, ker_size/2 - 0.5, ker_size/2 - 0.5, ker_size*2.0, 0.1);
+
+//     displayMatrixAsAscii(image);
+//     displayMatrixAsAscii(kernal);
+
+//     convolve(image, kernal, result);
+
+//     cudaDeviceSynchronize();
+
+//     displayMatrixAsAscii(result);
+//     return 0;
+// }
+
+
 int main() {
     srand(time(NULL));
 
-    FloatMatrix* image = zeroMatrix(16, 16);
-    FloatMatrix* kernal = zeroMatrix(5, 5);
-    FloatMatrix* result = zeroMatrix(12, 12);
+    int im_size = 32;
+    int ker_size = 3;
+    int res_size = im_size - ker_size + 1;
 
-    drawCircle(image, 7.5, 7.5, 6, 1);
-    drawCircle(kernal, 2, 2, 2.5, 1);
+    FloatMatrix* image = zeroMatrix(im_size, im_size);
+    FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
+    FloatMatrix* result = zeroMatrix(res_size, res_size);
 
-    displayMatrixAsAscii(image);
-    displayMatrixAsAscii(kernal);
+    drawCircle(image, im_size/2.5, im_size/2.5, im_size/5.0, 0.4);
+    drawCircle(image, 1.5*im_size/2.5, 1.5*im_size/2.5, im_size/5.0, 0.1);
+
+    for (int i=0; i<ker_size; i++) {
+        for (int j=0; j<ker_size; j++) {
+            kernal->cpu[i*ker_size + j] = (j - ker_size/2.0 + 0.5)/ker_size*2;
+        }
+    }
+    displayMatrix(image);
+    displaySignedMatrix(kernal);
+
+    copyToDevice(image);
+    copyToDevice(kernal);
 
     convolve(image, kernal, result);
 
+    copyFromDevice(result);
+
     cudaDeviceSynchronize();
-
-    printMatrix(result);
-
+    displaySignedMatrix(result);
+    
     return 0;
 }

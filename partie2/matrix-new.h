@@ -4,6 +4,10 @@
 #include <cuda.h>
 #include <math.h>
 
+#define KRED  "\x1B[31m"
+#define KBLU  "\x1B[34m"
+#define RESET "\x1B[0m"
+
 typedef struct floatMatrix {
     float* cpu; // optional
     float* gpu;
@@ -31,7 +35,9 @@ __host__ void copyFromDevice(FloatMatrix* matrix);
 
 __host__ void printMatrix(FloatMatrix* matrix);
 
-__host__ void displayMatrixAsAscii(FloatMatrix* matrix);
+__host__ void displayMatrix(FloatMatrix* matrix);
+
+__host__ void displaySignedMatrix(FloatMatrix* matrix);
 
 __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* result);
 

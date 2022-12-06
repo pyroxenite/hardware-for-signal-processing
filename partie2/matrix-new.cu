@@ -67,8 +67,8 @@ __host__ void copyToDevice(FloatMatrix* matrix) {
 
 __host__ void copyFromDevice(FloatMatrix* matrix) {
     cudaMemcpy(
-        matrix->gpu, 
         matrix->cpu, 
+        matrix->gpu, 
         sizeof(float)*matrix->m*matrix->n, 
         cudaMemcpyDeviceToHost
     );
@@ -89,7 +89,7 @@ __host__ void printMatrix(FloatMatrix* matrix) {
     printf("])\n");
 }
 
-__host__ void displayMatrixAsAscii(FloatMatrix* matrix) {
+__host__ void displayMatrix(FloatMatrix* matrix) {
     char levels[] = " .:;+=xX$&";
     int l = matrix->n * matrix->m;
     printf("@@@@");
@@ -118,6 +118,39 @@ __host__ void displayMatrixAsAscii(FloatMatrix* matrix) {
     printf("@@\n");
 }
 
+__host__ void displaySignedMatrix(FloatMatrix* matrix) {
+    char levels[] = " .:;+=xX$&";
+    int l = matrix->n * matrix->m;
+    printf("%s@@@@", RESET);
+    for (int i=0; i<matrix->m+2; i++)
+        printf("@@");
+    printf("\n@@");
+    for (int i=0; i<matrix->m+2; i++)
+        printf("  ");
+    printf("%s@@\n@@  ", RESET);
+    for (int i=0; i<l; i++) {
+        float val = matrix->cpu[i];
+
+        int lev = (int) (abs(val) * 10);
+        if (lev > 9) lev = 9;
+        if (lev < 0) lev = 0;
+        if (val > 0)
+            printf("%s%c%c", KBLU, levels[lev], levels[lev]);
+        else 
+            printf("%s%c%c", KRED, levels[lev], levels[lev]);
+        if (i % matrix->m == matrix->m-1) {
+            printf("%s  @@\n@@  ", RESET);
+        }
+    }
+
+    for (int i=0; i<matrix->m+1; i++)
+        printf("  ");
+    printf("%s@@\n@@", RESET);
+    for (int i=0; i<matrix->m+2; i++)
+        printf("@@");
+    printf("@@\n");
+}
+
 __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m, int im_n, int ker_m, int ker_n) {
     int res_i = threadIdx.x;
     int res_j = blockIdx.x;
@@ -126,12 +159,12 @@ __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m
     float sum = 0;
     for (int i=0; i<ker_m*ker_n; i++) {
         ker_i = i / ker_n;
-        ker_j = i % ker_n,
+        ker_j = i % ker_n;
         im_i = res_i + ker_i;
         im_j = res_j + ker_j;
         sum += image[im_i*im_n + im_j] * kernal[ker_i*ker_n + ker_j];
     }
-    result[im_i*blockDim.y + im_j] = sum;
+    result[res_i*blockDim.x + res_j] = sum;
 }
 
 __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* result) {
@@ -140,7 +173,6 @@ __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* res
     convolveGpu<<<image->m - kernal->m + 1, image->n - kernal->n + 1>>>(
         image->gpu, kernal->gpu, result->gpu, image->m, image->n, kernal->m, kernal->n
     );
-    cudaDeviceSynchronize();
     copyFromDevice(result);
 }
 
