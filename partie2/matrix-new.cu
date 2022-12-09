@@ -168,21 +168,42 @@ __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m
 }
 
 __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* result) {
-    copyToDevice(image);
-    copyToDevice(kernal);
     convolveGpu<<<image->m - kernal->m + 1, image->n - kernal->n + 1>>>(
         image->gpu, kernal->gpu, result->gpu, image->m, image->n, kernal->m, kernal->n
     );
-    copyFromDevice(result);
+}
+
+__global__ void drawCircleGpu(float* image, float x, float y, float r, float color) {
+    int i = threadIdx.x;
+    int j = blockIdx.x;
+    int n = blockDim.x;
+    if (sqrt((i-y)*(i-y) + (j-x)*(j-x)) < r) {
+        image[i*n + j] = color;
+    }
 }
 
 __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float color) {
-    for (int i=0; i<matrix->m; i++) {
-        for (int j=0; j<matrix->n; j++) {
-            if (sqrt((i-y)*(i-y) + (j-x)*(j-x)) < r) {
-                matrix->cpu[i*matrix->n + j] = color;
-            }
-        }
-    }
-    copyToDevice(matrix);
+    drawCircleGpu<<<matrix->n, matrix->m>>>(matrix->gpu, x, y, r, color);
+}
+
+__global__ void subsampleGpu(float* input, float* output, int amount) {
+    int i = threadIdx.x;
+    int j = blockIdx.x;
+    int n = blockDim.x;
+    output[i*n + j] = input[i*n*amount*amount + j*amount];
+}
+
+__host__ void subsample(FloatMatrix* input, FloatMatrix* output, int amount) {
+    subsampleGpu<<<output->n, output->m>>>(input->gpu, output->gpu, amount);
+}
+
+__global__ void applyActivationGpu(float* matrix) {
+    int i = threadIdx.x;
+    int j = blockIdx.x;
+    int n = blockDim.x;
+    matrix[i*n + j] = tanh(matrix[i*n + j]);
+}
+
+__host__ void applyActivation(FloatMatrix* matrix) {
+    applyActivationGpu<<<matrix->n, matrix->m>>>(matrix->gpu);
 }

@@ -42,3 +42,7 @@ __host__ void displaySignedMatrix(FloatMatrix* matrix);
 __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* result);
 
 __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float color);
+
+__host__ void subsample(FloatMatrix* input, FloatMatrix* output, int amount);
+
+__host__ void applyActivation(FloatMatrix* matrix);
