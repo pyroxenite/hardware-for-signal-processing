@@ -114,13 +114,34 @@ void sobelDemo() {
     freeMatrix(result);
 }
 
+void readTest() {
+    printf("Single matrix file load:\n");
+
+    FloatMatrix* test = loadMatrix("../data/test.bin", 3, 3);
+    printMatrix(test);
+
+    printf("\nMulti matrix file load:\n");
+
+    FloatMatrix** testMulti = loadMatrices("../data/testMulti.bin", 4, 3, 3);
+    forEach(testMulti, 4, printMatrix);
+
+    FloatMatrix* result = zeroMatrix(3, 3);
+
+    matrixMult(test, testMulti[1], result);
+    copyFromDevice(result);
+
+    printMatrix(result);
+}
+
 
 int main() {
     srand(time(NULL));
 
-    sobelDemo();
+    //sobelDemo();
 
     //blurDemo();
+
+    readTest();
     
     return 0;
 }

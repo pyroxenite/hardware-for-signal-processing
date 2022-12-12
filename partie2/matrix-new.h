@@ -15,7 +15,7 @@ typedef struct floatMatrix {
     int n;
 } FloatMatrix;
 
-__host__ FloatMatrix* newMatrix(float* cpu, int n, int m);
+__host__ FloatMatrix* newMatrix(float* cpu, int m, int n);
 
 __host__ void freeMatrix(FloatMatrix* matrix);
 
@@ -46,3 +46,9 @@ __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float c
 __host__ void subsample(FloatMatrix* input, FloatMatrix* output, int amount);
 
 __host__ void applyActivation(FloatMatrix* matrix);
+
+__host__ void matrixMult(FloatMatrix* mat1, FloatMatrix* mat2, FloatMatrix* result);
+
+__host__ FloatMatrix* loadMatrix(const char* filename, int m, int n);
+
+__host__ FloatMatrix** loadMatrices(const char* filename, int count, int m, int n);

@@ -207,3 +207,35 @@ __global__ void applyActivationGpu(float* matrix) {
 __host__ void applyActivation(FloatMatrix* matrix) {
     applyActivationGpu<<<matrix->n, matrix->m>>>(matrix->gpu);
 }
+
+__global__ void matrixMultGpu(float* mat1, float* mat2, float* result, int m, int n, int p) {
+    int i = threadIdx.x;
+    int j = threadIdx.y;
+    result[i*blockDim.x + j] = 0;
+    for (int k=0; k<n; k++) {
+        result[i*blockDim.x + j] += mat1[i*m + k] * mat2[k*n + j];
+    }
+}
+
+__host__ void matrixMult(FloatMatrix* mat1, FloatMatrix* mat2, FloatMatrix* result) {
+    matrixMultGpu<<<result->n, result->m>>>(mat1->gpu, mat2->gpu, result->gpu, mat1->m, mat2->m, mat2->n);
+}
+
+__host__ FloatMatrix* loadMatrix(const char* filename, int m, int n) {
+    float* matrix = (float*) malloc(sizeof(float) * m * n);
+    FILE* file = fopen(filename, "rb");
+    fread((void*) matrix, sizeof(float), m * n, file);
+    fclose(file);
+    return newMatrix(matrix, m, n);
+}
+
+__host__ FloatMatrix** loadMatrices(const char* filename, int count, int m, int n) {
+    FloatMatrix** matrices = zeroMatrices(count, m, n);
+    FILE* file = fopen(filename, "rb");
+    for (int i=0; i<count; i++) {
+        fread((void*) matrices[i]->cpu, sizeof(float), m * n, file);
+    }
+    forEach(matrices, count, copyToDevice);
+    fclose(file);
+    return matrices;
+}
