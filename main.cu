@@ -94,25 +94,6 @@ void sobelDemo() {
     freeMatrix(result);
 }
 
-void readTest() {
-    printf("Single matrix file load:\n");
-
-    FloatMatrix* test = loadMatrix("../data/test.bin", 3, 3);
-    printMatrix(test);
-
-    printf("\nMulti matrix file load:\n");
-
-    FloatMatrix** testMulti = loadMatrices("../data/testMulti.bin", 4, 3, 3);
-    forEach(testMulti, 4, printMatrix);
-
-    FloatMatrix* result = zeroMatrix(3, 3);
-
-    matrixMult(test, testMulti[1], result);
-    copyFromDevice(result);
-
-    printMatrix(result);
-}
-
 void kernalReadTest() {
     FloatMatrix** kernals = loadMatrices("../data/conv1-weights.bin", 6, 5, 5);
     FloatMatrix* bias = loadVector("../data/conv1-bias.bin", 6, COLUMN);
@@ -142,18 +123,32 @@ void imageReadTest() {
     forEach(numbers, 10, freeMatrix);
 }
 
+void matrixProductTest() {
+    FloatMatrix* mat1 = randomMatrix(3, 5);
+    FloatMatrix* mat2 = randomMatrix(5, 4);
+
+    FloatMatrix* mat3 = zeroMatrix(3, 4);
+
+    matrixMult(mat1, mat2, mat3);
+    copyFromDevice(mat3);
+
+    printMatrix(mat1);
+    printMatrix(mat2);
+    printMatrix(mat3);
+}
+
 int main() {
     srand(time(NULL));
 
-    //sobelDemo();
+    sobelDemo();
 
-    //blurDemo();
-
-    //readTest();
+    // blurDemo();
 
     // kernalReadTest();
 
-    imageReadTest();
+    // imageReadTest();
+
+    // matrixProductTest();
     
     return 0;
 }
