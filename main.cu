@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "matrix-new.h"
+#include "matrix.h"
 #include <math.h>
 
 void blurDemo() {
@@ -95,59 +95,77 @@ void sobelDemo() {
 }
 
 void kernalReadTest() {
-    FloatMatrix** kernals = loadMatrices("../data/conv1-weights.bin", 6, 5, 5);
-    FloatMatrix* bias = loadVector("../data/conv1-bias.bin", 6, COLUMN);
+    // Read matrices from files.
+    FloatMatrix** kernals = loadMatrices("data/conv1-weights.bin", 6, 5, 5);
+    FloatMatrix* bias = loadVector("data/conv1-bias.bin", 6, COLUMN);
 
+    // Display them.
     forEach(kernals, 6, displaySignedMatrix);
     displaySignedMatrix(bias);
     
+    // Fre allocated memory.
     forEach(kernals, 6, freeMatrix);
     freeMatrix(bias);
 }
 
 void imageReadTest() {
+    // Initialize 10 28x28 matrices to store images.
     FloatMatrix** numbers = zeroMatrices(10, 28, 28);
 
-    numbers[0] = loadMatrix("../data/0.bin", 28, 28);
-    numbers[1] = loadMatrix("../data/1.bin", 28, 28);
-    numbers[2] = loadMatrix("../data/2.bin", 28, 28);
-    numbers[3] = loadMatrix("../data/3.bin", 28, 28);
-    numbers[4] = loadMatrix("../data/4.bin", 28, 28);
-    numbers[5] = loadMatrix("../data/5.bin", 28, 28);
-    numbers[6] = loadMatrix("../data/6.bin", 28, 28);
-    numbers[7] = loadMatrix("../data/7.bin", 28, 28);
-    numbers[8] = loadMatrix("../data/8.bin", 28, 28);
-    numbers[9] = loadMatrix("../data/9.bin", 28, 28);
+    // Load all 10 images.
+    numbers[0] = loadMatrix("data/0.bin", 28, 28);
+    numbers[1] = loadMatrix("data/1.bin", 28, 28);
+    numbers[2] = loadMatrix("data/2.bin", 28, 28);
+    numbers[3] = loadMatrix("data/3.bin", 28, 28);
+    numbers[4] = loadMatrix("data/4.bin", 28, 28);
+    numbers[5] = loadMatrix("data/5.bin", 28, 28);
+    numbers[6] = loadMatrix("data/6.bin", 28, 28);
+    numbers[7] = loadMatrix("data/7.bin", 28, 28);
+    numbers[8] = loadMatrix("data/8.bin", 28, 28);
+    numbers[9] = loadMatrix("data/9.bin", 28, 28);
 
+    // Display them as ASCII art.
     forEach(numbers, 10, displayMatrix);
+
+    // Fre allocated memory.
     forEach(numbers, 10, freeMatrix);
 }
 
 void matrixProductTest() {
+    srand(time(NULL));
+
+    // Initialize some random matrices.
     FloatMatrix* mat1 = randomMatrix(3, 5);
     FloatMatrix* mat2 = randomMatrix(5, 4);
 
-    FloatMatrix* mat3 = zeroMatrix(3, 4);
+    // Initialize a matrix to store the result of the matrix multiplication.
+    FloatMatrix* result = zeroMatrix(3, 4);
 
-    matrixMult(mat1, mat2, mat3);
-    copyFromDevice(mat3);
+    // Multiply matrix oon the GPU and copy result to CPU.
+    matrixMult(mat1, mat2, result);
+    copyFromDevice(result);
 
+    // Print all the matrices.
     printMatrix(mat1);
     printMatrix(mat2);
-    printMatrix(mat3);
+    printMatrix(result);
+
+    // Free allocated memory.
+    freeMatrix(mat1);
+    freeMatrix(mat2);
+    freeMatrix(result);
+}
+
+void test() {
+    
 }
 
 int main() {
-    srand(time(NULL));
 
-    sobelDemo();
-
+    // sobelDemo();
     // blurDemo();
-
     // kernalReadTest();
-
     // imageReadTest();
-
     // matrixProductTest();
     
     return 0;

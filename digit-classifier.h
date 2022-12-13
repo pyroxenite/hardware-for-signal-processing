@@ -33,7 +33,7 @@ typedef struct DenseLayer {
 } DenseLayer;
 
 
-typedef struct MnistClassifier {
+typedef struct DigitClassifier {
     FloatMatrix* input;
     ConvolutionLayer* conv1;
     AveragePoolingLayer* avgPool1;
@@ -43,7 +43,7 @@ typedef struct MnistClassifier {
     DenseLayer* dense1;
     DenseLayer* dense2;
     DenseLayer* dense3;
-} MnistClassifier;
+} DigitClassifier;
 
 
 __host__ ConvolutionLayer* newConvolutionLayer(int channelCount, int kernalCount, int m, int n);
@@ -70,8 +70,8 @@ __host__ void loadDenseLayerParams(DenseLayer* dense, const char* weightsPath, c
 __host__ void evaluateDenseLayer(DenseLayer* dense, FloatMatrix* input);
 
 
-__host__ MnistClassifier* newMnistClassifier();
+__host__ DigitClassifier* newDigitClassifier();
 
-__host__ void loadClassifierParams(MnistClassifier* classif, const char* dir);
+__host__ void loadDigitClassifierParams(DigitClassifier* classif, const char* dir);
 
-__host__ int classify(FloatMatrix* input);
+__host__ int evaluateDigitClassifier(DigitClassifier* classif, FloatMatrix* input);
