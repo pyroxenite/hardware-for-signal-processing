@@ -78,14 +78,12 @@ __host__ void printMatrix(FloatMatrix* matrix) {
     int l = matrix->n * matrix->m;
     printf("Matrix([\n");
     for (int i=0; i<l; i++) {
-        if (matrix->n == 1) {
-            printf("  [ %5.2f ],\n", matrix->cpu[i]);
-        } else if (i % matrix->n == 0) {
-            printf("  [ %5.2f,", matrix->cpu[i]);
-        } else if (i % matrix->n == matrix->n-1) {
-            printf(" %5.2f ],\n", matrix->cpu[i]);
+        if (i % matrix->m == 0) {
+            printf("  [ %4.1f,", matrix->cpu[i]);
+        } else if (i % matrix->m == matrix->m-1) {
+            printf(" %4.1f ],\n", matrix->cpu[i]);
         } else {
-            printf(" %5.2f,", matrix->cpu[i]);
+            printf(" %4.1f,", matrix->cpu[i]);
         }
     }
     printf("])\n");
@@ -229,13 +227,6 @@ __host__ FloatMatrix* loadMatrix(const char* filename, int m, int n) {
     fread((void*) matrix, sizeof(float), m * n, file);
     fclose(file);
     return newMatrix(matrix, m, n);
-}
-
-__host__ FloatMatrix* loadVector(const char* filename, int n, int isColumn) {
-    if (isColumn == 0)
-        return loadMatrix(filename, 1, n);
-    else
-        return loadMatrix(filename, n, 1);
 }
 
 __host__ FloatMatrix** loadMatrices(const char* filename, int count, int m, int n) {

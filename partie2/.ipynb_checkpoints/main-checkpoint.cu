@@ -4,6 +4,26 @@
 #include "matrix-new.h"
 #include <math.h>
 
+// int main() {
+//     srand(time(NULL));
+
+//     FloatMatrix* raw_data = randomMatrix(32, 32);
+
+//     FloatMatrix** kernals = randomMatrices(6, 5, 5);
+//     FloatMatrix** postConvolution = zeroMatrices(6, 28, 28);
+//     FloatMatrix** postSubsampling = zeroMatrices(6, 14, 14);
+
+//     convolve(raw_data, kernals[0], postConvolution[0]);
+
+//     freeMatrix(raw_data);
+//     forEach(kernals, 6, freeMatrix);
+//     forEach(postConvolution, 6, freeMatrix);
+//     forEach(postSubsampling, 6, freeMatrix);
+
+//     cudaDeviceSynchronize();
+//     return 0;
+// }
+
 void blurDemo() {
     int im_size = 31;
     int ker_size = 6;
@@ -115,7 +135,7 @@ void readTest() {
 
 void kernalReadTest() {
     FloatMatrix** kernals = loadMatrices("../data/conv1-weights.bin", 6, 5, 5);
-    FloatMatrix* bias = loadVector("../data/conv1-bias.bin", 6, COLUMN);
+    FloatMatrix* bias = loadMatrix("../data/conv1-bias.bin", 28, 28);
 
     forEach(kernals, 6, displaySignedMatrix);
     displaySignedMatrix(bias);
@@ -134,6 +154,8 @@ int main() {
     //readTest();
 
     kernalReadTest();
+
+
     
     return 0;
 }

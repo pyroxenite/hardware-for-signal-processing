@@ -8,6 +8,9 @@
 #define KBLU  "\x1B[34m"
 #define RESET "\x1B[0m"
 
+#define COLUMN 1
+#define ROW 0
+
 typedef struct floatMatrix {
     float* cpu; // optional
     float* gpu;
@@ -50,5 +53,7 @@ __host__ void applyActivation(FloatMatrix* matrix);
 __host__ void matrixMult(FloatMatrix* mat1, FloatMatrix* mat2, FloatMatrix* result);
 
 __host__ FloatMatrix* loadMatrix(const char* filename, int m, int n);
+
+__host__ FloatMatrix* loadVector(const char* filename, int n, int isColumn);
 
 __host__ FloatMatrix** loadMatrices(const char* filename, int count, int m, int n);
