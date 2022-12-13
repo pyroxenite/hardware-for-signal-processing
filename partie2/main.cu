@@ -124,6 +124,24 @@ void kernalReadTest() {
     freeMatrix(bias);
 }
 
+void imageReadTest() {
+    FloatMatrix** numbers = zeroMatrices(10, 28, 28);
+
+    numbers[0] = loadMatrix("../data/0.bin", 28, 28);
+    numbers[1] = loadMatrix("../data/1.bin", 28, 28);
+    numbers[2] = loadMatrix("../data/2.bin", 28, 28);
+    numbers[3] = loadMatrix("../data/3.bin", 28, 28);
+    numbers[4] = loadMatrix("../data/4.bin", 28, 28);
+    numbers[5] = loadMatrix("../data/5.bin", 28, 28);
+    numbers[6] = loadMatrix("../data/6.bin", 28, 28);
+    numbers[7] = loadMatrix("../data/7.bin", 28, 28);
+    numbers[8] = loadMatrix("../data/8.bin", 28, 28);
+    numbers[9] = loadMatrix("../data/9.bin", 28, 28);
+
+    forEach(numbers, 10, displayMatrix);
+    forEach(numbers, 10, freeMatrix);
+}
+
 int main() {
     srand(time(NULL));
 
@@ -133,7 +151,9 @@ int main() {
 
     //readTest();
 
-    kernalReadTest();
+    // kernalReadTest();
+
+    imageReadTest();
     
     return 0;
 }
