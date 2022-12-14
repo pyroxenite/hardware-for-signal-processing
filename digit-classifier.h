@@ -46,32 +46,80 @@ typedef struct DigitClassifier {
 } DigitClassifier;
 
 
-__host__ ConvolutionLayer* newConvolutionLayer(int channelCount, int kernalCount, int m, int n);
+__host__ ConvolutionLayer* newConvolutionLayer(
+    int channelCount, 
+    int kernalCount, 
+    int ker_m, int ker_n, 
+    int in_m,  int in_n
+);
 
-__host__ void loadConvolutionLayerParams(ConvolutionLayer* conv, const char* kernalsPath, const char* biasPath);
+__host__ void loadConvolutionLayerParams(
+    ConvolutionLayer* conv, 
+    const char* kernalsPath, 
+    const char* biasPath
+);
 
-__host__ void evaluateConvolutionLayer(ConvolutionLayer* conv, FloatMatrix** inputChannels);
+__host__ void displayConvolutionLayerKernals(
+    ConvolutionLayer* conv
+);
+
+__host__ void displayConvolutionLayerOutputs(
+    ConvolutionLayer* conv
+);
+
+__host__ void evaluateConvolutionLayer(
+    ConvolutionLayer* conv, 
+    FloatMatrix** inputChannels
+);
 
 
-__host__ AveragePoolingLayer* newAveragePoolingLayer(int channelCount, int m, int n);
+__host__ AveragePoolingLayer* newAveragePoolingLayer(
+    int channelCount, 
+    int m, int n
+);
 
-__host__ void evaluateAveragePoolingLayer(AveragePoolingLayer* avgPool, FloatMatrix** inputChannels);
+__host__ void evaluateAveragePoolingLayer(
+    AveragePoolingLayer* avgPool, 
+    FloatMatrix** inputChannels
+);
 
 
-__host__ FlattenLayer* newFlattenLayer(int channelCount, int m, int n);
+__host__ FlattenLayer* newFlattenLayer(
+    int channelCount, 
+    int m, int n
+);
 
-__host__ void evaluateFlattenLayer(FlattenLayer* flatten, FloatMatrix** inputChannels);
+__host__ void evaluateFlattenLayer(
+    FlattenLayer* flatten, 
+    FloatMatrix** inputChannels
+);
 
 
-__host__ DenseLayer* newDenseLayer(int inputSize, int outputSize);
+__host__ DenseLayer* newDenseLayer(
+    int inputSize, 
+    int outputSize
+);
 
-__host__ void loadDenseLayerParams(DenseLayer* dense, const char* weightsPath, const char* biasPath);
+__host__ void loadDenseLayerParams(
+    DenseLayer* dense, 
+    const char* weightsPath, 
+    const char* biasPath
+);
 
-__host__ void evaluateDenseLayer(DenseLayer* dense, FloatMatrix* input);
+__host__ void evaluateDenseLayer(
+    DenseLayer* dense, 
+    FloatMatrix* input
+);
 
 
 __host__ DigitClassifier* newDigitClassifier();
 
-__host__ void loadDigitClassifierParams(DigitClassifier* classif, const char* dir);
+__host__ void loadDigitClassifierParams(
+    DigitClassifier* classif, 
+    const char* dir
+);
 
-__host__ int evaluateDigitClassifier(DigitClassifier* classif, FloatMatrix* input);
+__host__ int evaluateDigitClassifier(
+    DigitClassifier* classif, 
+    FloatMatrix* input
+);

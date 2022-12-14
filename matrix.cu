@@ -50,7 +50,7 @@ __host__ FloatMatrix** randomMatrices(int count, int m, int n) {
     return matrices;
 }
 
-__host__ void forEach(FloatMatrix** matrices, int count, void (*fun)(FloatMatrix* matrix)) {
+__host__ void forEachMatrix(FloatMatrix** matrices, int count, void (*fun)(FloatMatrix* matrix)) {
     for (int i=0; i<count; i++) {
         fun(matrices[i]);
     }
@@ -92,47 +92,43 @@ __host__ void printMatrix(FloatMatrix* matrix) {
 }
 
 __host__ void displayMatrix(FloatMatrix* matrix) {
-    char levels[] = " .:;+=xX#$";
-    int l = matrix->n * matrix->m;
-    printf("@@@@");
-    for (int i=0; i<matrix->m+2; i++)
-        printf("@@");
-    printf("\n@@");
-    for (int i=0; i<matrix->m+2; i++)
-        printf("  ");
-    printf("@@\n@@  ");
+    char levels[] = " .:;=+xX@$";
+    int l = matrix->m * matrix->n;
+    printf("╭");
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("╮\n");
     for (int i=0; i<l; i++) {
+        if (i % matrix->n == 0) {
+            printf("│ ");
+        }
         float val = matrix->cpu[i];
         int lev = (int) (val * 10);
         if (lev > 9) lev = 9;
         if (lev < 0) lev = 0;
         printf("%c%c", levels[lev], levels[lev]);
-        if (i % matrix->m == matrix->m-1) {
-            printf("  @@\n@@  ");
+        if (i % matrix->n == matrix->n-1) {
+            printf(" │\n");
         }
     }
-
-    for (int i=0; i<matrix->m+1; i++)
-        printf("  ");
-    printf("@@\n@@");
-    for (int i=0; i<matrix->m+2; i++)
-        printf("@@");
-    printf("@@\n");
+    printf("╰");
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("╯\n");
 }
 
 __host__ void displaySignedMatrix(FloatMatrix* matrix) {
-    char levels[] = " .:;+=xX$&";
-    int l = matrix->n * matrix->m;
-    printf("%s@@@@", RESET);
-    for (int i=0; i<matrix->m+2; i++)
-        printf("@@");
-    printf("\n@@");
-    for (int i=0; i<matrix->m+2; i++)
-        printf("  ");
-    printf("%s@@\n@@  ", RESET);
+    char levels[] = " .:;=+xX@$";
+    int l = matrix->m * matrix->n;
+    printf("%s╭", RESET);
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("%s╮\n", RESET);
     for (int i=0; i<l; i++) {
+        if (i % matrix->n == 0) {
+            printf("│ ");
+        }
         float val = matrix->cpu[i];
-
         int lev = (int) (abs(val) * 10);
         if (lev > 9) lev = 9;
         if (lev < 0) lev = 0;
@@ -140,22 +136,39 @@ __host__ void displaySignedMatrix(FloatMatrix* matrix) {
             printf("%s%c%c", KBLU, levels[lev], levels[lev]);
         else 
             printf("%s%c%c", KRED, levels[lev], levels[lev]);
-        if (i % matrix->m == matrix->m-1) {
-            printf("%s  @@\n@@  ", RESET);
+        if (i % matrix->n == matrix->n-1) {
+            printf("%s │\n", RESET);
         }
     }
+    printf("╰");
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("╯\n");
+}
 
-    for (int i=0; i<matrix->m+1; i++)
-        printf("  ");
-    printf("%s@@\n@@", RESET);
-    for (int i=0; i<matrix->m+2; i++)
-        printf("@@");
-    printf("@@\n");
+__global__ void setMatrixToZeroGpu(float* matrix) {
+    matrix[blockIdx.x*blockDim.x + threadIdx.x] = 0;
+}
+
+__host__ void setMatrixToZero(FloatMatrix* matrix) {
+    setMatrixToZeroGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
+}
+
+__global__ void addMatricesGpu(float* matrix, float* sum) {
+    int index = blockIdx.x*blockDim.x + threadIdx.x;
+    sum[index] += matrix[index];
+}
+
+__host__ void addMatrices(FloatMatrix** matrices, int count, FloatMatrix* result) {
+    setMatrixToZero(result);
+    for (int i=0; i<count; i++) {
+        addMatricesGpu<<<result->m, result->n>>>(matrices[i]->gpu, result->gpu);
+    }
 }
 
 __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m, int im_n, int ker_m, int ker_n) {
-    int res_i = threadIdx.x;
-    int res_j = blockIdx.x;
+    int res_i = blockIdx.x;
+    int res_j = threadIdx.x;
     int ker_i, ker_j;
     int im_i, im_j;
     float sum = 0;
@@ -166,7 +179,7 @@ __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m
         im_j = res_j + ker_j;
         sum += image[im_i*im_n + im_j] * kernal[ker_i*ker_n + ker_j];
     }
-    result[res_i*blockDim.x + res_j] = sum;
+    result[res_i*blockDim.x + res_j] += sum;
 }
 
 __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* result) {
@@ -176,8 +189,8 @@ __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* res
 }
 
 __global__ void drawCircleGpu(float* image, float x, float y, float r, float color) {
-    int i = threadIdx.x;
-    int j = blockIdx.x;
+    int i = blockIdx.x;
+    int j = threadIdx.x;
     int n = blockDim.x;
     if (sqrt((i-y)*(i-y) + (j-x)*(j-x)) < r) {
         image[i*n + j] = color;
@@ -185,34 +198,34 @@ __global__ void drawCircleGpu(float* image, float x, float y, float r, float col
 }
 
 __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float color) {
-    drawCircleGpu<<<matrix->n, matrix->m>>>(matrix->gpu, x, y, r, color);
+    drawCircleGpu<<<matrix->m, matrix->n>>>(matrix->gpu, x, y, r, color);
 }
 
 __global__ void subsampleGpu(float* input, float* output, int amount) {
-    int i = threadIdx.x;
-    int j = blockIdx.x;
+    int i = blockIdx.x;
+    int j = threadIdx.x;
     int n = blockDim.x;
     output[i*n + j] = input[i*n*amount*amount + j*amount];
 }
 
 __host__ void subsample(FloatMatrix* input, FloatMatrix* output, int amount) {
-    subsampleGpu<<<output->n, output->m>>>(input->gpu, output->gpu, amount);
+    subsampleGpu<<<output->m, output->n>>>(input->gpu, output->gpu, amount);
 }
 
 __global__ void applyActivationGpu(float* matrix) {
-    int i = threadIdx.x;
-    int j = blockIdx.x;
+    int i = blockIdx.x;
+    int j = threadIdx.x;
     int n = blockDim.x;
     matrix[i*n + j] = tanh(matrix[i*n + j]);
 }
 
 __host__ void applyActivation(FloatMatrix* matrix) {
-    applyActivationGpu<<<matrix->n, matrix->m>>>(matrix->gpu);
+    applyActivationGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
 }
 
 __global__ void matrixMultGpu(float* mat1, float* mat2, float* result, int m, int n, int p) {
-    int i = threadIdx.x;
-    int j = blockIdx.x;
+    int i = blockIdx.x;
+    int j = threadIdx.x;
     result[i*p + j] = 0;
     for (int k=0; k<n; k++) {
         result[i*p + j] += mat1[i*n + k] * mat2[k*p + j];
@@ -220,7 +233,7 @@ __global__ void matrixMultGpu(float* mat1, float* mat2, float* result, int m, in
 }
 
 __host__ void matrixMult(FloatMatrix* mat1, FloatMatrix* mat2, FloatMatrix* result) {
-    matrixMultGpu<<<result->n, result->m>>>(mat1->gpu, mat2->gpu, result->gpu, mat1->m, mat2->m, mat2->n);
+    matrixMultGpu<<<result->m, result->n>>>(mat1->gpu, mat2->gpu, result->gpu, mat1->m, mat2->m, mat2->n);
 }
 
 __host__ FloatMatrix* loadMatrix(const char* filename, int m, int n) {
@@ -244,7 +257,7 @@ __host__ FloatMatrix** loadMatrices(const char* filename, int count, int m, int 
     for (int i=0; i<count; i++) {
         fread((void*) matrices[i]->cpu, sizeof(float), m * n, file);
     }
-    forEach(matrices, count, copyToDevice);
+    forEachMatrix(matrices, count, copyToDevice);
     fclose(file);
     return matrices;
 }

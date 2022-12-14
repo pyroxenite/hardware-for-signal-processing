@@ -1,43 +1,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "matrix.h"
 #include <math.h>
+#include "matrix.h"
+#include "digit-classifier.h"
 
 void blurDemo() {
     int im_size = 31;
     int ker_size = 6;
     int res_size = im_size - ker_size + 1;
 
-    // Initialize some matrices.
+    // Initialize some matrices. (CPU & GPU)
     FloatMatrix* image = zeroMatrix(im_size, im_size);
     FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
     FloatMatrix* result = zeroMatrix(res_size, res_size);
     FloatMatrix* subsampledResult = zeroMatrix(res_size/2, res_size/2);
 
-    // Create example input image. (Operation done on GPU side.)
+    // Create example input image. (GPU)
     drawCircle(image, im_size/2.5, im_size/2.5, im_size/5.0, 0.4);
     drawCircle(image, 1.5*im_size/2.5, 1.5*im_size/2.5, im_size/5.0, 0.1);
 
-    // Create example kernal. (Operation done on GPU side.)
+    // Create example kernal. (GPU)
     drawCircle(kernal, ker_size/2 - 0.5, ker_size/2 - 0.5, ker_size/2, 0.1);
 
-    // Apply convolution.
+    // Apply convolution. (GPU)
     convolve(image, kernal, result);
 
-    // Subsample by a factor of 2.
+    // Subsample by a factor of 2. (GPU)
     subsample(result, subsampledResult, 2);
 
     // Wait for GPU.
     cudaDeviceSynchronize();
 
-    // Copy data from GPU.
+    // Copy data from GPU to CPU.
     copyFromDevice(image);
     copyFromDevice(kernal);
     copyFromDevice(result);
     copyFromDevice(subsampledResult);
 
-    // Display matrices.
+    // Display matrices. (CPU)
     displayMatrix(image);
     displayMatrix(kernal);
     displayMatrix(result);
@@ -60,7 +61,7 @@ void sobelDemo() {
     FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
     FloatMatrix* result = zeroMatrix(res_size, res_size);
 
-    // Draw an example input image. This is done on the GPU side.
+    // Draw an example input image. (GPU)
     drawCircle(image, im_size/3, im_size/3, im_size/3.8, 0.4);
     drawCircle(image, 2*im_size/3, 2*im_size/3, im_size/3.8, 0.1);
 
@@ -72,18 +73,18 @@ void sobelDemo() {
     }
     copyToDevice(kernal);
     
-    // Apply convolution.
+    // Apply convolution. (GPU)
     convolve(image, kernal, result);
 
     // Wait for GPU.
     cudaDeviceSynchronize();
     
-    // Copy data from GPU.
+    // Copy data from GPU to CPU.
     copyFromDevice(image);
     copyFromDevice(kernal);
     copyFromDevice(result);
 
-    // Display matrices.
+    // Display matrices. (CPU)
     displayMatrix(image);
     displaySignedMatrix(kernal); // negative -> red, positive -> blue
     displaySignedMatrix(result);
@@ -94,17 +95,17 @@ void sobelDemo() {
     freeMatrix(result);
 }
 
-void kernalReadTest() {
+void paramsReadTest() {
     // Read matrices from files.
     FloatMatrix** kernals = loadMatrices("data/conv1-weights.bin", 6, 5, 5);
     FloatMatrix* bias = loadVector("data/conv1-bias.bin", 6, COLUMN);
 
     // Display them.
-    forEach(kernals, 6, displaySignedMatrix);
+    forEachMatrix(kernals, 6, displaySignedMatrix);
     displaySignedMatrix(bias);
     
-    // Fre allocated memory.
-    forEach(kernals, 6, freeMatrix);
+    // Free allocated memory.
+    forEachMatrix(kernals, 6, freeMatrix);
     freeMatrix(bias);
 }
 
@@ -125,24 +126,30 @@ void imageReadTest() {
     numbers[9] = loadMatrix("data/9.bin", 28, 28);
 
     // Display them as ASCII art.
-    forEach(numbers, 10, displayMatrix);
+    forEachMatrix(numbers, 10, displayMatrix);
 
     // Fre allocated memory.
-    forEach(numbers, 10, freeMatrix);
+    forEachMatrix(numbers, 10, freeMatrix);
 }
 
-void matrixProductTest() {
+void matrixMultiplicationTest() {
     srand(time(NULL));
 
+    // Choose random matrix sizes.
+    int m = 2 + rand() % 6;
+    int n = 2 + rand() % 6;
+    int p = 2 + rand() % 6;
+
     // Initialize some random matrices.
-    FloatMatrix* mat1 = randomMatrix(3, 5);
-    FloatMatrix* mat2 = randomMatrix(5, 4);
+    FloatMatrix* mat1 = randomMatrix(m, n);
+    FloatMatrix* mat2 = randomMatrix(n, p);
 
     // Initialize a matrix to store the result of the matrix multiplication.
-    FloatMatrix* result = zeroMatrix(3, 4);
+    FloatMatrix* result = zeroMatrix(m, p);
 
-    // Multiply matrix oon the GPU and copy result to CPU.
+    // Multiply matrix on the GPU and copy result to CPU.
     matrixMult(mat1, mat2, result);
+    cudaDeviceSynchronize();
     copyFromDevice(result);
 
     // Print all the matrices.
@@ -156,17 +163,28 @@ void matrixProductTest() {
     freeMatrix(result);
 }
 
-void test() {
-    
+void classifierTest() {
+    FloatMatrix* number2 = loadMatrix("data/2.bin", 28, 28);
+    FloatMatrix** inputChannels = &number2;
+
+    ConvolutionLayer* conv = newConvolutionLayer(1, 6, 5, 5, 28, 28);
+    loadConvolutionLayerParams(conv, "data/conv1-weights.bin", "data/conv1-bias.bin");
+    displayConvolutionLayerKernals(conv);
+
+    evaluateConvolutionLayer(conv, inputChannels);
+
+    cudaDeviceSynchronize();
+    displayConvolutionLayerOutputs(conv);
 }
 
 int main() {
-
-    // sobelDemo();
     // blurDemo();
-    // kernalReadTest();
+    // sobelDemo();
+    // paramsReadTest();
     // imageReadTest();
-    // matrixProductTest();
+    // matrixMultiplicationTest();
+
+    //classifierTest();
     
     return 0;
 }
