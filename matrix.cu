@@ -166,6 +166,14 @@ __host__ void addMatrices(FloatMatrix** matrices, int count, FloatMatrix* result
     }
 }
 
+__global__ void addValueToMatrixGpu(float* matrix, float value) {
+    matrix[blockIdx.x*blockDim.x + threadIdx.x] += value;
+}
+
+__host__ void addValueToMatrix(FloatMatrix* matrix, float value) {
+    addValueToMatrixGpu<<<matrix->m, matrix->n>>>(matrix->gpu, value);
+}
+
 __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m, int im_n, int ker_m, int ker_n) {
     int res_i = blockIdx.x;
     int res_j = threadIdx.x;
@@ -201,15 +209,21 @@ __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float c
     drawCircleGpu<<<matrix->m, matrix->n>>>(matrix->gpu, x, y, r, color);
 }
 
-__global__ void subsampleGpu(float* input, float* output, int amount) {
+__global__ void averagePoolGpu(float* input, float* output, int amount) {
     int i = blockIdx.x;
     int j = threadIdx.x;
     int n = blockDim.x;
-    output[i*n + j] = input[i*n*amount*amount + j*amount];
+    output[i*n + j] = 0;
+    for (int di=0; di<amount; di++) {
+        for (int dj=0; dj<amount; dj++) {
+            output[i*n + j] += input[(i + di)*n*amount*amount + (j + dj)*amount];
+        }
+    }
+    output[i*n + j] /= amount * amount;
 }
 
-__host__ void subsample(FloatMatrix* input, FloatMatrix* output, int amount) {
-    subsampleGpu<<<output->m, output->n>>>(input->gpu, output->gpu, amount);
+__host__ void averagePool(FloatMatrix* input, FloatMatrix* output, int amount) {
+    averagePoolGpu<<<output->m, output->n>>>(input->gpu, output->gpu, amount);
 }
 
 __global__ void applyActivationGpu(float* matrix) {

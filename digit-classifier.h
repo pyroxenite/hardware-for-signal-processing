@@ -4,17 +4,18 @@
 
 
 typedef struct ConvolutionLayer {
-    int channelCount;
-    int kernalCount;
+    int inChannelCount;
+    int outChannelCount;
     FloatMatrix** kernals;
     FloatMatrix* bias;
-    FloatMatrix** outputs;
+    FloatMatrix** outChannels;
 } ConvolutionLayer;
 
 
 typedef struct AveragePoolingLayer {
     int channelCount;
-    FloatMatrix** outputs;
+    FloatMatrix** outChannels;
+    int amount;
 } AveragePoolingLayer;
 
 
@@ -75,12 +76,17 @@ __host__ void evaluateConvolutionLayer(
 
 __host__ AveragePoolingLayer* newAveragePoolingLayer(
     int channelCount, 
-    int m, int n
+    int m, int n,
+    int amount
+);
+
+__host__ void displayAveragePoolingOutputs(
+    AveragePoolingLayer* avgPool
 );
 
 __host__ void evaluateAveragePoolingLayer(
     AveragePoolingLayer* avgPool, 
-    FloatMatrix** inputChannels
+    FloatMatrix** inChannels
 );
 
 

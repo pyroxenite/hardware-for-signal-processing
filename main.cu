@@ -165,16 +165,39 @@ void matrixMultiplicationTest() {
 
 void classifierTest() {
     FloatMatrix* number2 = loadMatrix("data/2.bin", 28, 28);
-    FloatMatrix** inputChannels = &number2;
+    FloatMatrix** inChannels = &number2;
 
-    ConvolutionLayer* conv = newConvolutionLayer(1, 6, 5, 5, 28, 28);
-    loadConvolutionLayerParams(conv, "data/conv1-weights.bin", "data/conv1-bias.bin");
-    displayConvolutionLayerKernals(conv);
+    ConvolutionLayer* conv1 = newConvolutionLayer(1, 6, 5, 5, 28, 28);
+    loadConvolutionLayerParams(conv1, "data/conv1-weights.bin", "data/conv1-bias.bin");
+    printf("Conv 1 :\n");
+    displayConvolutionLayerKernals(conv1);
 
-    evaluateConvolutionLayer(conv, inputChannels);
+    AveragePoolingLayer* avgPool1 = newAveragePoolingLayer(6, 24, 24);
+
+    ConvolutionLayer* conv2 = newConvolutionLayer(6, 16, 5, 5, 12, 12);
+    loadConvolutionLayerParams(conv2, "data/conv2-weights.bin", "data/conv2-bias.bin");
+    printf("\nConv 2 :\n");
+    displayConvolutionLayerKernals(conv2);
+
+    AveragePoolingLayer* avgPool1 = newAveragePoolingLayer(16, 8, 8);
+
+    evaluateConvolutionLayer(conv1, inChannels);
+    evaluateAveragePoolingLayer(avgPool1, conv1->outChannels);
+    evaluateConvolutionLayer(conv2, avgPool1->outChannels);
+    evaluateAveragePoolingLayer(avgPool2, conv2->outChannels);
 
     cudaDeviceSynchronize();
-    displayConvolutionLayerOutputs(conv);
+    printf("\nConv 1 :\n");
+    displayConvolutionLayerOutputs(conv1);
+
+    printf("\nAverage Pooling 1 :\n");
+    displayAveragePoolingOutputs(avgPool1);
+
+    printf("\nConv 2 :\n");
+    displayConvolutionLayerOutputs(conv2);
+
+    printf("\nAverage Pooling 2 :\n");
+    displayAveragePoolingOutputs(avgPool2);
 }
 
 int main() {
@@ -184,7 +207,7 @@ int main() {
     // imageReadTest();
     // matrixMultiplicationTest();
 
-    //classifierTest();
+    classifierTest();
     
     return 0;
 }
