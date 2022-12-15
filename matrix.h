@@ -14,6 +14,8 @@
 #define COLUMN 1
 #define ROW 0
 
+typedef enum Activation { TANH, SOFTMAX } Activation;
+
 typedef struct floatMatrix {
     float* cpu; // optional
     float* gpu;
@@ -47,9 +49,9 @@ __host__ void displaySignedMatrix(FloatMatrix* matrix);
 
 __host__ void setMatrixToZero(FloatMatrix* matrix);
 
-__host__ void addValueToMatrix(FloatMatrix* matrix, float value);
+__host__ void addMatrix(FloatMatrix* matrix, FloatMatrix* sum);
 
-__host__ void addMatrices(FloatMatrix** matrices, int count, FloatMatrix* result);
+__host__ void addValueToMatrix(FloatMatrix* matrix, float value);
 
 __host__ void convolve(FloatMatrix* image, FloatMatrix* kernal, FloatMatrix* result);
 
@@ -57,7 +59,9 @@ __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float c
 
 __host__ void averagePool(FloatMatrix* input, FloatMatrix* output, int amount);
 
-__host__ void applyActivation(FloatMatrix* matrix);
+__host__ void applyActivation(FloatMatrix* matrix, Activation activation);
+
+__host__ void flattenMatrices(FloatMatrix** matrices, int count, FloatMatrix* output);
 
 __host__ void matrixMult(FloatMatrix* mat1, FloatMatrix* mat2, FloatMatrix* result);
 

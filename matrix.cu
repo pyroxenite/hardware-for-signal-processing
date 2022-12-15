@@ -154,16 +154,13 @@ __host__ void setMatrixToZero(FloatMatrix* matrix) {
     setMatrixToZeroGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
 }
 
-__global__ void addMatricesGpu(float* matrix, float* sum) {
+__global__ void addMatrixGpu(float* matrix, float* sum) {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
     sum[index] += matrix[index];
 }
 
-__host__ void addMatrices(FloatMatrix** matrices, int count, FloatMatrix* result) {
-    setMatrixToZero(result);
-    for (int i=0; i<count; i++) {
-        addMatricesGpu<<<result->m, result->n>>>(matrices[i]->gpu, result->gpu);
-    }
+__host__ void addMatrix(FloatMatrix* matrix, FloatMatrix* sum) {
+    addMatrixGpu<<<sum->m, sum->n>>>(matrix->gpu, sum->gpu);
 }
 
 __global__ void addValueToMatrixGpu(float* matrix, float value) {
@@ -226,15 +223,34 @@ __host__ void averagePool(FloatMatrix* input, FloatMatrix* output, int amount) {
     averagePoolGpu<<<output->m, output->n>>>(input->gpu, output->gpu, amount);
 }
 
-__global__ void applyActivationGpu(float* matrix) {
+__global__ void applyTanhActivationGpu(float* matrix) {
     int i = blockIdx.x;
     int j = threadIdx.x;
     int n = blockDim.x;
     matrix[i*n + j] = tanh(matrix[i*n + j]);
 }
 
-__host__ void applyActivation(FloatMatrix* matrix) {
-    applyActivationGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
+__host__ void applyActivation(FloatMatrix* matrix, Activation activation) {
+    if (activation == TANH) {
+        applyTanhActivationGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
+    } else if (activation == SOFTMAX) {
+        // applySoftmaxActivationGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
+    }
+}
+
+__global__ void flattenMatricesGpu(float* matrix, float* output, int offset) {
+    int i = blockIdx.x;
+    int j = threadIdx.x;
+    int n = blockDim.x;
+    output[offset + i*n + j] = matrix[i*n + j];
+}
+
+__host__ void flattenMatrices(FloatMatrix** matrices, int count, FloatMatrix* output) {
+    int m = matrices[0]->m;
+    int n = matrices[0]->n;
+    for (int i=0; i<count; i++) {
+        flattenMatricesGpu<<<m, n>>>(matrices[i]->gpu, output->gpu, m*n*i);
+    }
 }
 
 __global__ void matrixMultGpu(float* mat1, float* mat2, float* result, int m, int n, int p) {

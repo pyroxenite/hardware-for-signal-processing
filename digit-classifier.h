@@ -2,13 +2,13 @@
 #include <stdlib.h>
 #include "matrix.h"
 
-
 typedef struct ConvolutionLayer {
     int inChannelCount;
     int outChannelCount;
     FloatMatrix** kernals;
     FloatMatrix* bias;
     FloatMatrix** outChannels;
+    Activation activation;
 } ConvolutionLayer;
 
 
@@ -31,6 +31,7 @@ typedef struct DenseLayer {
     FloatMatrix* weights;
     FloatMatrix* bias;
     FloatMatrix* output;
+    Activation activation;
 } DenseLayer;
 
 
@@ -51,7 +52,8 @@ __host__ ConvolutionLayer* newConvolutionLayer(
     int channelCount, 
     int kernalCount, 
     int ker_m, int ker_n, 
-    int in_m,  int in_n
+    int in_m,  int in_n,
+    Activation activation
 );
 
 __host__ void loadConvolutionLayerParams(
@@ -97,13 +99,14 @@ __host__ FlattenLayer* newFlattenLayer(
 
 __host__ void evaluateFlattenLayer(
     FlattenLayer* flatten, 
-    FloatMatrix** inputChannels
+    FloatMatrix** inChannels
 );
 
 
 __host__ DenseLayer* newDenseLayer(
-    int inputSize, 
-    int outputSize
+    int inSize, 
+    int outSize,
+    Activation activation
 );
 
 __host__ void loadDenseLayerParams(
