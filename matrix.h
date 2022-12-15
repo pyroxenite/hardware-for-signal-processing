@@ -14,7 +14,7 @@
 #define COLUMN 1
 #define ROW 0
 
-typedef enum Activation { TANH, SOFTMAX } Activation;
+typedef enum Activation { TANH = 1, SOFTMAX = 2 } Activation;
 
 typedef struct floatMatrix {
     float* cpu; // optional

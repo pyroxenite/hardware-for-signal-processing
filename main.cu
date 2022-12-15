@@ -163,76 +163,49 @@ void matrixMultiplicationTest() {
     freeMatrix(result);
 }
 
-void classifierTest() {
-    FloatMatrix* number = loadMatrix("data/7.bin", 28, 28);
-    FloatMatrix** inChannels = &number;
-
+void digitClassifierDemo() {
     ConvolutionLayer* conv1 = newConvolutionLayer(1, 6, 5, 5, 28, 28, TANH);
     loadConvolutionLayerParams(conv1, "data/conv1-weights.bin", "data/conv1-bias.bin");
-    printf("Conv 1 :\n");
-    displayConvolutionLayerKernals(conv1);
-
-    AveragePoolingLayer* avgPool1 = newAveragePoolingLayer(6, 24, 24, 2);
 
     ConvolutionLayer* conv2 = newConvolutionLayer(6, 16, 5, 5, 12, 12, TANH);
     loadConvolutionLayerParams(conv2, "data/conv2-weights.bin", "data/conv2-bias.bin");
-    printf("\nConv 2 :\n");
-    displayConvolutionLayerKernals(conv2);
-
-    AveragePoolingLayer* avgPool2 = newAveragePoolingLayer(16, 8, 8, 2);
-
-    FlattenLayer* flatten = newFlattenLayer(16, 4, 4);
 
     DenseLayer* dense1 = newDenseLayer(16 * 4 * 4, 120, TANH);
     loadDenseLayerParams(dense1, "data/dense1-weights.bin", "data/dense1-bias.bin");
-    // displaySignedMatrix(dense1->weights);
 
     DenseLayer* dense2 = newDenseLayer(120, 84, TANH);
     loadDenseLayerParams(dense2, "data/dense2-weights.bin", "data/dense2-bias.bin");
-    // displaySignedMatrix(dense2->weights);
 
     DenseLayer* dense3 = newDenseLayer(84, 10, SOFTMAX);
     loadDenseLayerParams(dense3, "data/dense3-weights.bin", "data/dense3-bias.bin");
-    // displaySignedMatrix(dense3->weights);
 
+    NeuralNetwork* cnn = newNeuralNetwork();
 
-    evaluateConvolutionLayer(conv1, inChannels);
-    evaluateAveragePoolingLayer(avgPool1, conv1->outChannels);
-    evaluateConvolutionLayer(conv2, avgPool1->outChannels);
-    evaluateAveragePoolingLayer(avgPool2, conv2->outChannels);
-    evaluateFlattenLayer(flatten, avgPool2->outChannels);
-    evaluateDenseLayer(dense1, flatten->output);
-    evaluateDenseLayer(dense2, dense1->output);
-    evaluateDenseLayer(dense3, dense2->output);
+    addLayer(cnn, (Layer*) conv1);
+    addLayer(cnn, (Layer*) newAveragePoolingLayer(6, 24, 24, 2));
+    addLayer(cnn, (Layer*) conv2);
+    addLayer(cnn, (Layer*) newAveragePoolingLayer(16, 8, 8, 2));
+    addLayer(cnn, (Layer*) newFlattenLayer(16, 4, 4));
+    addLayer(cnn, (Layer*) dense1);
+    addLayer(cnn, (Layer*) dense2);
+    addLayer(cnn, (Layer*) dense3);
 
-    cudaDeviceSynchronize();
-    printf("\nConv 1 :\n");
+    FloatMatrix* imageOfNumber = loadMatrix("data/3.bin", 28, 28);
+    FloatMatrix** input = &imageOfNumber;
+
+    displayMatrix(imageOfNumber);
+
+    FloatMatrix** output = forward(cnn, input);
+    
+    printf("\nConv 1 outputs:\n");
     displayConvolutionLayerOutputs(conv1);
 
-    printf("\nAverage Pooling 1 :\n");
-    displayAveragePoolingOutputs(avgPool1);
-
-    printf("\nConv 2 :\n");
+    printf("\nConv 2 outputs:\n");
     displayConvolutionLayerOutputs(conv2);
 
-    printf("\nAverage Pooling 2 :\n");
-    displayAveragePoolingOutputs(avgPool2);
-
-    printf("\nFlatten Output :\n");
-    copyFromDevice(flatten->output);
-    displaySignedMatrix(flatten->output);
-
-    printf("\nDense 1 Output :\n");
-    copyFromDevice(dense1->output);
-    displaySignedMatrix(dense1->output);
-
-    printf("\nDense 2 Output :\n");
-    copyFromDevice(dense2->output);
-    displaySignedMatrix(dense2->output);
-
-    printf("\nDense 3 Output :\n");
-    copyFromDevice(dense3->output);
-    printMatrix(dense3->output);
+    printf("\nDense 3 output:\n");
+    copyFromDevice(dense3->output[0]);
+    printMatrix(dense3->output[0]);
 }
 
 int main() {
@@ -242,7 +215,7 @@ int main() {
     // imageReadTest();
     // matrixMultiplicationTest();
 
-    classifierTest();
+    digitClassifierDemo();
     
     return 0;
 }

@@ -2,51 +2,80 @@
 #include <stdlib.h>
 #include "matrix.h"
 
+typedef enum LayerType {
+    CONVOLUTION_LAYER,
+    AVERAGE_POOLING_LAYER,
+    FLATTEN_LAYER,
+    DENSE_LAYER
+} LayerType;
+
+typedef struct Layer {
+    LayerType type;
+    FloatMatrix** output;
+    Layer* nextLayer;
+} Layer;
+
 typedef struct ConvolutionLayer {
+    LayerType type;
+    FloatMatrix** output;
+    Layer* nextLayer;
+
     int inChannelCount;
     int outChannelCount;
     FloatMatrix** kernals;
     FloatMatrix* bias;
-    FloatMatrix** outChannels;
     Activation activation;
 } ConvolutionLayer;
 
-
 typedef struct AveragePoolingLayer {
+    LayerType type;
+    FloatMatrix** output;
+    Layer* nextLayer;
+
     int channelCount;
-    FloatMatrix** outChannels;
     int amount;
 } AveragePoolingLayer;
 
-
 typedef struct FlattenLayer {
+    LayerType type;
+    FloatMatrix** output;
+    Layer* nextLayer;
+
     int channelCount;
     int m;
     int n;
-    FloatMatrix* output;
 } FlattenLayer;
 
-
 typedef struct DenseLayer {
+    LayerType type;
+    FloatMatrix** output;
+    Layer* nextLayer;
+
     FloatMatrix* weights;
     FloatMatrix* bias;
-    FloatMatrix* output;
     Activation activation;
 } DenseLayer;
 
+typedef struct NeuralNetwork {
+    Layer* firstLayer;
+} NeuralNetwork;
 
-typedef struct DigitClassifier {
-    FloatMatrix* input;
-    ConvolutionLayer* conv1;
-    AveragePoolingLayer* avgPool1;
-    ConvolutionLayer* conv2;
-    AveragePoolingLayer* avgPool2;
-    FlattenLayer* flatten;
-    DenseLayer* dense1;
-    DenseLayer* dense2;
-    DenseLayer* dense3;
-} DigitClassifier;
+__host__ NeuralNetwork* newNeuralNetwork();
 
+__host__ FloatMatrix** forward(
+    NeuralNetwork* nn, 
+    FloatMatrix** input
+);
+
+__host__ void addLayer(
+    NeuralNetwork* nn, 
+    Layer* layer
+);
+
+__host__ void evaluateLayer(
+    Layer* layer, 
+    FloatMatrix** input
+);
 
 __host__ ConvolutionLayer* newConvolutionLayer(
     int channelCount, 
@@ -72,7 +101,7 @@ __host__ void displayConvolutionLayerOutputs(
 
 __host__ void evaluateConvolutionLayer(
     ConvolutionLayer* conv, 
-    FloatMatrix** inputChannels
+    FloatMatrix** input
 );
 
 
@@ -88,7 +117,7 @@ __host__ void displayAveragePoolingOutputs(
 
 __host__ void evaluateAveragePoolingLayer(
     AveragePoolingLayer* avgPool, 
-    FloatMatrix** inChannels
+    FloatMatrix** input
 );
 
 
@@ -99,7 +128,7 @@ __host__ FlattenLayer* newFlattenLayer(
 
 __host__ void evaluateFlattenLayer(
     FlattenLayer* flatten, 
-    FloatMatrix** inChannels
+    FloatMatrix** input
 );
 
 
@@ -117,18 +146,18 @@ __host__ void loadDenseLayerParams(
 
 __host__ void evaluateDenseLayer(
     DenseLayer* dense, 
-    FloatMatrix* input
+    FloatMatrix** input
 );
 
 
-__host__ DigitClassifier* newDigitClassifier();
+// __host__ DigitClassifier* newDigitClassifier();
 
-__host__ void loadDigitClassifierParams(
-    DigitClassifier* classif, 
-    const char* dir
-);
+// __host__ void loadDigitClassifierParams(
+//     DigitClassifier* classif, 
+//     const char* dir
+// );
 
-__host__ int evaluateDigitClassifier(
-    DigitClassifier* classif, 
-    FloatMatrix* input
-);
+// __host__ int evaluateDigitClassifier(
+//     DigitClassifier* classif, 
+//     FloatMatrix* input
+// );

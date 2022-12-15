@@ -230,11 +230,35 @@ __global__ void applyTanhActivationGpu(float* matrix) {
     matrix[i*n + j] = tanh(matrix[i*n + j]);
 }
 
+__global__ void applyExponentialGpu(float* matrix) {
+    int i = blockIdx.x;
+    int j = threadIdx.x;
+    int n = blockDim.x;
+    matrix[i*n + j] = exp(matrix[i*n + j]);
+}
+
+__global__ void divideMatrixByValueGpu(float* matrix, float value) {
+    int i = blockIdx.x;
+    int j = threadIdx.x;
+    int n = blockDim.x;
+    matrix[i*n + j] /= value;
+}
+
+__host__ void divideMatrixByValue(FloatMatrix* matrix, float value) {
+    divideMatrixByValueGpu<<<matrix->m, matrix->n>>>(matrix->gpu, value);
+}
+
 __host__ void applyActivation(FloatMatrix* matrix, Activation activation) {
     if (activation == TANH) {
         applyTanhActivationGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
     } else if (activation == SOFTMAX) {
-        // applySoftmaxActivationGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
+        applyExponentialGpu<<<matrix->m, matrix->n>>>(matrix->gpu);
+        copyFromDevice(matrix);
+        float sum = 0;
+        for (int i=0; i<matrix->m*matrix->n; i++) {
+            sum += matrix->cpu[i];
+        }
+        divideMatrixByValue(matrix, sum);
     }
 }
 

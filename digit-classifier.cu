@@ -1,123 +1,179 @@
 #include "digit-classifier.h"
 
+__host__ NeuralNetwork* newNeuralNetwork() {
+    NeuralNetwork* nn = (NeuralNetwork*) malloc(sizeof(NeuralNetwork));
+    nn->firstLayer = NULL;
+    return nn;
+}
+
+__host__ void addLayer(NeuralNetwork* nn, Layer* layer) {
+    if (nn->firstLayer == NULL) {
+        nn->firstLayer = layer;
+        return;
+    }
+    Layer* currentLayer = nn->firstLayer;
+    while (currentLayer->nextLayer != NULL) {
+        currentLayer = currentLayer->nextLayer;
+    }
+    currentLayer->nextLayer = layer;
+}
+
+__host__ FloatMatrix** forward(NeuralNetwork* nn, FloatMatrix** input) {
+    if (nn->firstLayer == NULL)
+        return input; // Empty network, nothing to do.
+    Layer* currentLayer = nn->firstLayer;
+    FloatMatrix** data = input;
+    while (currentLayer != NULL) {
+        evaluateLayer(currentLayer, data);
+        data = currentLayer->output;
+        currentLayer = currentLayer->nextLayer;
+    }
+    cudaDeviceSynchronize();
+    return data;
+}
+
+__host__ void evaluateLayer(Layer* layer, FloatMatrix** input) {
+    if (layer->type == CONVOLUTION_LAYER) {
+        ConvolutionLayer* convLayer = (ConvolutionLayer*) layer;
+        evaluateConvolutionLayer(convLayer, input); 
+    } else if (layer->type == AVERAGE_POOLING_LAYER) {
+        AveragePoolingLayer* avgPoolLayer = (AveragePoolingLayer*) layer;
+        evaluateAveragePoolingLayer(avgPoolLayer, input);
+    } else if (layer->type == FLATTEN_LAYER) {
+        FlattenLayer* flattenLayer = (FlattenLayer*) layer;
+        evaluateFlattenLayer(flattenLayer, input);
+    } else if (layer->type == DENSE_LAYER) {
+        DenseLayer* denseLayer = (DenseLayer*) layer;
+        evaluateDenseLayer(denseLayer, input);
+    }
+}
+
 __host__ ConvolutionLayer* newConvolutionLayer(
     int inChannelCount, int outChannelCount, int ker_m, int ker_n, int in_m, int in_n, Activation activation
 ) {
-    ConvolutionLayer* conv = (ConvolutionLayer*) malloc(sizeof(ConvolutionLayer));
+    ConvolutionLayer* layer = (ConvolutionLayer*) malloc(sizeof(ConvolutionLayer));
 
-    conv->inChannelCount = inChannelCount;
-    conv->outChannelCount = outChannelCount;
-    conv->kernals = zeroMatrices(outChannelCount * inChannelCount, ker_m, ker_n);
-    conv->bias = zeroMatrix(1, outChannelCount);
-    conv->outChannels = zeroMatrices(outChannelCount, in_m - ker_m + 1, in_n - ker_n + 1);
-    conv->activation = activation;
+    layer->type = CONVOLUTION_LAYER;
+    layer->output = zeroMatrices(outChannelCount, in_m - ker_m + 1, in_n - ker_n + 1);
+    layer->nextLayer = (Layer*) NULL;
 
-    return conv;
+    layer->inChannelCount = inChannelCount;
+    layer->outChannelCount = outChannelCount;
+    layer->kernals = zeroMatrices(outChannelCount * inChannelCount, ker_m, ker_n);
+    layer->bias = zeroMatrix(1, outChannelCount);
+    layer->activation = activation;
+
+    return layer;
 }
 
 __host__ void loadConvolutionLayerParams(
-    ConvolutionLayer* conv, const char* kernalsPath, const char* biasPath
+    ConvolutionLayer* layer, const char* kernalsPath, const char* biasPath
 ) {
-    forEachMatrix(conv->kernals, conv->inChannelCount * conv->outChannelCount, freeMatrix);
-    conv->kernals = loadMatrices(
+    forEachMatrix(layer->kernals, layer->inChannelCount * layer->outChannelCount, freeMatrix);
+    layer->kernals = loadMatrices(
         kernalsPath, 
-        conv->inChannelCount * conv->outChannelCount, 
-        conv->kernals[0]->m, 
-        conv->kernals[0]->n
+        layer->inChannelCount * layer->outChannelCount, 
+        layer->kernals[0]->m, 
+        layer->kernals[0]->n
     );
-    freeMatrix(conv->bias);
-    conv->bias = loadVector(
+    freeMatrix(layer->bias);
+    layer->bias = loadVector(
         biasPath, 
-        conv->outChannelCount, 
+        layer->outChannelCount, 
         ROW
     );
 }
 
-__host__ void displayConvolutionLayerKernals(ConvolutionLayer* conv) {
-    forEachMatrix(conv->kernals, conv->outChannelCount*conv->inChannelCount, displaySignedMatrix);
+__host__ void displayConvolutionLayerKernals(ConvolutionLayer* layer) {
+    forEachMatrix(layer->kernals, layer->outChannelCount*layer->inChannelCount, displaySignedMatrix);
 }
 
-__host__ void evaluateConvolutionLayer(ConvolutionLayer* conv, FloatMatrix** inChannels) {
-    for (int out=0; out<conv->outChannelCount; out++) {
-        setMatrixToZero(conv->outChannels[out]);
-        for (int in=0; in<conv->inChannelCount; in++) {
+__host__ void evaluateConvolutionLayer(ConvolutionLayer* layer, FloatMatrix** input) {
+    for (int out=0; out<layer->outChannelCount; out++) {
+        setMatrixToZero(layer->output[out]);
+        for (int in=0; in<layer->inChannelCount; in++) {
             convolve(
-                inChannels[in], 
-                conv->kernals[in + out*conv->inChannelCount], 
-                conv->outChannels[out]
+                input[in], 
+                layer->kernals[in + out*layer->inChannelCount], 
+                layer->output[out]
             );
         }
-        addValueToMatrix(conv->outChannels[out], conv->bias->cpu[out]);
-        applyActivation(conv->outChannels[out], conv->activation);
+        addValueToMatrix(layer->output[out], layer->bias->cpu[out]);
+        applyActivation(layer->output[out], layer->activation);
     }
 }
 
-__host__ void displayConvolutionLayerOutputs(ConvolutionLayer* conv) {
-    forEachMatrix(conv->outChannels, conv->outChannelCount, copyFromDevice);
-    forEachMatrix(conv->outChannels, conv->outChannelCount, displaySignedMatrix);
+__host__ void displayConvolutionLayerOutputs(ConvolutionLayer* layer) {
+    forEachMatrix(layer->output, layer->outChannelCount, copyFromDevice);
+    forEachMatrix(layer->output, layer->outChannelCount, displaySignedMatrix);
 }
 
 __host__ AveragePoolingLayer* newAveragePoolingLayer(int channelCount, int m, int n, int amount) {
-    AveragePoolingLayer* avgPool = (AveragePoolingLayer*) malloc(sizeof(AveragePoolingLayer));
+    AveragePoolingLayer* layer = (AveragePoolingLayer*) malloc(sizeof(AveragePoolingLayer));
 
-    avgPool->channelCount = channelCount;
-    avgPool->outChannels = zeroMatrices(channelCount, m/amount, n/amount);
-    avgPool->amount = amount;
+    layer->type = AVERAGE_POOLING_LAYER;
+    layer->output = zeroMatrices(channelCount, m/amount, n/amount);
+    layer->nextLayer = (Layer*) NULL;
 
-    return avgPool;
+    layer->channelCount = channelCount;
+    layer->amount = amount;
+
+    return layer;
 }
 
-__host__ void evaluateAveragePoolingLayer(AveragePoolingLayer* avgPool, FloatMatrix** inChannels) {
-    for (int i=0; i<avgPool->channelCount; i++) {
-        averagePool(inChannels[i], avgPool->outChannels[i], avgPool->amount);
+__host__ void evaluateAveragePoolingLayer(AveragePoolingLayer* layer, FloatMatrix** input) {
+    for (int i=0; i<layer->channelCount; i++) {
+        averagePool(input[i], layer->output[i], layer->amount);
     }
 }
 
-__host__ void displayAveragePoolingOutputs(AveragePoolingLayer* avgPool) {
-    forEachMatrix(avgPool->outChannels, avgPool->channelCount, copyFromDevice);
-    forEachMatrix(avgPool->outChannels, avgPool->channelCount, displaySignedMatrix);
+__host__ void displayAveragePoolingOutputs(AveragePoolingLayer* layer) {
+    forEachMatrix(layer->output, layer->channelCount, copyFromDevice);
+    forEachMatrix(layer->output, layer->channelCount, displaySignedMatrix);
 }
 
 
 __host__ FlattenLayer* newFlattenLayer(int channelCount, int m, int n) {
-    FlattenLayer* flatten = (FlattenLayer*) malloc(sizeof(FlattenLayer));
+    FlattenLayer* layer = (FlattenLayer*) malloc(sizeof(FlattenLayer));
 
-    flatten->channelCount = channelCount;
-    flatten->m = m;
-    flatten->n = n;
-    flatten->output = zeroMatrix(channelCount * m * n, 1);
+    layer->type = FLATTEN_LAYER;
+    layer->output = zeroMatrices(1, channelCount * m * n, 1);
+    layer->nextLayer = (Layer*) NULL;
 
-    return flatten;
+    layer->channelCount = channelCount;
+    layer->m = m;
+    layer->n = n;
+
+    return layer;
 }
 
-__host__ void evaluateFlattenLayer(FlattenLayer* flatten, FloatMatrix** inChannels) {
-    // for (int in=0; in<flatten->channelCount; in++) {
-    //     for (int i=0; i<flatten->m*flatten->n; i++) {
-    //         flatten->output->cpu[in * flatten->m * flatten->n + i] = inChannels[in]->cpu[i];
-    //     }
-    // }
-    flattenMatrices(inChannels, flatten->channelCount, flatten->output);
+__host__ void evaluateFlattenLayer(FlattenLayer* layer, FloatMatrix** input) {
+    flattenMatrices(input, layer->channelCount, layer->output[0]);
 }
 
 __host__ DenseLayer* newDenseLayer(int inSize, int outSize, Activation activation) {
-    DenseLayer* dense = (DenseLayer*) malloc(sizeof(DenseLayer));
+    DenseLayer* layer = (DenseLayer*) malloc(sizeof(DenseLayer));
 
-    dense->weights = zeroMatrix(outSize, inSize);
-    dense->bias = zeroMatrix(outSize, 1);
-    dense->output = zeroMatrix(outSize, 1);
+    layer->type = DENSE_LAYER;
+    layer->output = zeroMatrices(1, outSize, 1);
+    layer->nextLayer = (Layer*) NULL;
 
-    return dense;
+    layer->weights = zeroMatrix(outSize, inSize);
+    layer->bias = zeroMatrix(outSize, 1);
+    layer->activation = activation;
+
+    return layer;
 }
 
-__host__ void loadDenseLayerParams(DenseLayer* dense, const char* weightsPath, const char* biasPath) {
-    freeMatrix(dense->weights);
-    dense->weights = loadMatrix(weightsPath, dense->weights->m, dense->weights->n);
-    freeMatrix(dense->bias);
-    dense->bias = loadMatrix(biasPath, dense->bias->m, dense->bias->n);
+__host__ void loadDenseLayerParams(DenseLayer* layer, const char* weightsPath, const char* biasPath) {
+    freeMatrix(layer->weights);
+    layer->weights = loadMatrix(weightsPath, layer->weights->m, layer->weights->n);
+    freeMatrix(layer->bias);
+    layer->bias = loadMatrix(biasPath, layer->bias->m, layer->bias->n);
 }
 
-__host__ void evaluateDenseLayer(DenseLayer* dense, FloatMatrix* input) {
-    matrixMult(dense->weights, input, dense->output);
-    addMatrix(dense->bias, dense->output);
-    applyActivation(dense->output, dense->activation);
+__host__ void evaluateDenseLayer(DenseLayer* layer, FloatMatrix** input) {
+    matrixMult(layer->weights, *input, *(layer->output));
+    addMatrix(layer->bias, *(layer->output));
+    applyActivation(*(layer->output), layer->activation);
 }
