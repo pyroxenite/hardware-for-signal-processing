@@ -1,63 +1,39 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include "matrix-new.h"
-#include <math.h>
-
-// int main() {
-//     srand(time(NULL));
-
-//     FloatMatrix* raw_data = randomMatrix(32, 32);
-
-//     FloatMatrix** kernals = randomMatrices(6, 5, 5);
-//     FloatMatrix** postConvolution = zeroMatrices(6, 28, 28);
-//     FloatMatrix** postSubsampling = zeroMatrices(6, 14, 14);
-
-//     convolve(raw_data, kernals[0], postConvolution[0]);
-
-//     freeMatrix(raw_data);
-//     forEach(kernals, 6, freeMatrix);
-//     forEach(postConvolution, 6, freeMatrix);
-//     forEach(postSubsampling, 6, freeMatrix);
-
-//     cudaDeviceSynchronize();
-//     return 0;
-// }
+#include "matrix.h"
 
 void blurDemo() {
     int im_size = 31;
     int ker_size = 6;
     int res_size = im_size - ker_size + 1;
 
-    // Initialize some matrices.
+    // Initialize some matrices. (CPU & GPU)
     FloatMatrix* image = zeroMatrix(im_size, im_size);
     FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
     FloatMatrix* result = zeroMatrix(res_size, res_size);
     FloatMatrix* subsampledResult = zeroMatrix(res_size/2, res_size/2);
 
-    // Create example input image. (Operation done on GPU side.)
+    // Create example input image. (GPU)
     drawCircle(image, im_size/2.5, im_size/2.5, im_size/5.0, 0.4);
     drawCircle(image, 1.5*im_size/2.5, 1.5*im_size/2.5, im_size/5.0, 0.1);
 
-    // Create example kernal. (Operation done on GPU side.)
+    // Create example kernal. (GPU)
     drawCircle(kernal, ker_size/2 - 0.5, ker_size/2 - 0.5, ker_size/2, 0.1);
 
-    // Apply convolution.
+    // Apply convolution. (GPU)
     convolve(image, kernal, result);
 
-    // Subsample by a factor of 2.
-    subsample(result, subsampledResult, 2);
+    // Subsample by a factor of 2. (GPU)
+    averagePool(result, subsampledResult, 2);
 
     // Wait for GPU.
     cudaDeviceSynchronize();
 
-    // Copy data from GPU.
+    // Copy data from GPU to CPU.
     copyFromDevice(image);
     copyFromDevice(kernal);
     copyFromDevice(result);
     copyFromDevice(subsampledResult);
 
-    // Display matrices.
+    // Display matrices. (CPU)
     displayMatrix(image);
     displayMatrix(kernal);
     displayMatrix(result);
@@ -69,7 +45,6 @@ void blurDemo() {
     freeMatrix(result);
 }
 
-
 void sobelDemo() {
     int im_size = 32;
     int ker_size = 3;
@@ -80,7 +55,7 @@ void sobelDemo() {
     FloatMatrix* kernal = zeroMatrix(ker_size, ker_size);
     FloatMatrix* result = zeroMatrix(res_size, res_size);
 
-    // Draw an example input image. This is done on the GPU side.
+    // Draw an example input image. (GPU)
     drawCircle(image, im_size/3, im_size/3, im_size/3.8, 0.4);
     drawCircle(image, 2*im_size/3, 2*im_size/3, im_size/3.8, 0.1);
 
@@ -92,18 +67,18 @@ void sobelDemo() {
     }
     copyToDevice(kernal);
     
-    // Apply convolution.
+    // Apply convolution. (GPU)
     convolve(image, kernal, result);
 
     // Wait for GPU.
     cudaDeviceSynchronize();
     
-    // Copy data from GPU.
+    // Copy data from GPU to CPU.
     copyFromDevice(image);
     copyFromDevice(kernal);
     copyFromDevice(result);
 
-    // Display matrices.
+    // Display matrices. (CPU)
     displayMatrix(image);
     displaySignedMatrix(kernal); // negative -> red, positive -> blue
     displaySignedMatrix(result);
@@ -112,50 +87,4 @@ void sobelDemo() {
     freeMatrix(image);
     freeMatrix(kernal);
     freeMatrix(result);
-}
-
-void readTest() {
-    printf("Single matrix file load:\n");
-
-    FloatMatrix* test = loadMatrix("../data/test.bin", 3, 3);
-    printMatrix(test);
-
-    printf("\nMulti matrix file load:\n");
-
-    FloatMatrix** testMulti = loadMatrices("../data/testMulti.bin", 4, 3, 3);
-    forEach(testMulti, 4, printMatrix);
-
-    FloatMatrix* result = zeroMatrix(3, 3);
-
-    matrixMult(test, testMulti[1], result);
-    copyFromDevice(result);
-
-    printMatrix(result);
-}
-
-void kernalReadTest() {
-    FloatMatrix** kernals = loadMatrices("../data/conv1-weights.bin", 6, 5, 5);
-    FloatMatrix* bias = loadMatrix("../data/conv1-bias.bin", 28, 28);
-
-    forEach(kernals, 6, displaySignedMatrix);
-    displaySignedMatrix(bias);
-    
-    forEach(kernals, 6, freeMatrix);
-    freeMatrix(bias);
-}
-
-int main() {
-    srand(time(NULL));
-
-    //sobelDemo();
-
-    //blurDemo();
-
-    //readTest();
-
-    kernalReadTest();
-
-
-    
-    return 0;
 }

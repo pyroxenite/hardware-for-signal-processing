@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include <math.h>
+#include <string.h>
 
 #ifndef __MATRIX__
 #define __MATRIX__
@@ -46,6 +47,8 @@ __host__ void printMatrix(FloatMatrix* matrix);
 __host__ void displayMatrix(FloatMatrix* matrix);
 
 __host__ void displaySignedMatrix(FloatMatrix* matrix);
+
+__host__ void displayVectorAsBarGraph(FloatMatrix* matrix, int height, const char* title);
 
 __host__ void setMatrixToZero(FloatMatrix* matrix);
 

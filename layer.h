@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include "matrix.h"
 
+#ifndef __LAYER__
+#define __LAYER__
+
 typedef enum LayerType {
     CONVOLUTION_LAYER,
     AVERAGE_POOLING_LAYER,
@@ -56,25 +59,10 @@ typedef struct DenseLayer {
     Activation activation;
 } DenseLayer;
 
-typedef struct NeuralNetwork {
-    Layer* firstLayer;
-} NeuralNetwork;
-
-__host__ NeuralNetwork* newNeuralNetwork();
-
-__host__ FloatMatrix** forward(
-    NeuralNetwork* nn, 
-    FloatMatrix** input
-);
-
-__host__ void addLayer(
-    NeuralNetwork* nn, 
-    Layer* layer
-);
-
 __host__ void evaluateLayer(
     Layer* layer, 
-    FloatMatrix** input
+    FloatMatrix** input,
+    bool verbose
 );
 
 __host__ ConvolutionLayer* newConvolutionLayer(
@@ -101,7 +89,8 @@ __host__ void displayConvolutionLayerOutputs(
 
 __host__ void evaluateConvolutionLayer(
     ConvolutionLayer* conv, 
-    FloatMatrix** input
+    FloatMatrix** input,
+    bool verbose
 );
 
 
@@ -117,7 +106,8 @@ __host__ void displayAveragePoolingOutputs(
 
 __host__ void evaluateAveragePoolingLayer(
     AveragePoolingLayer* avgPool, 
-    FloatMatrix** input
+    FloatMatrix** input,
+    bool verbose
 );
 
 
@@ -128,7 +118,8 @@ __host__ FlattenLayer* newFlattenLayer(
 
 __host__ void evaluateFlattenLayer(
     FlattenLayer* flatten, 
-    FloatMatrix** input
+    FloatMatrix** input,
+    bool verbose
 );
 
 
@@ -146,7 +137,8 @@ __host__ void loadDenseLayerParams(
 
 __host__ void evaluateDenseLayer(
     DenseLayer* dense, 
-    FloatMatrix** input
+    FloatMatrix** input,
+    bool verbose
 );
 
 
@@ -161,3 +153,5 @@ __host__ void evaluateDenseLayer(
 //     DigitClassifier* classif, 
 //     FloatMatrix* input
 // );
+
+#endif

@@ -146,6 +146,60 @@ __host__ void displaySignedMatrix(FloatMatrix* matrix) {
     printf("╯\n");
 }
 
+__host__ void displayVectorAsBarGraph(FloatMatrix* matrix, int height, const char* title) {
+    if (height < 5) height = 5;
+    int bars = matrix->m * matrix->n;
+    int* barHeights = (int*) malloc(sizeof(int) * bars);
+    for (int i=0; i<bars; i++) {
+        barHeights[i] = (int) (matrix->cpu[i] * (height - 1));
+    }
+    int titleLen = strlen(title);
+    int leftSpacing = ((7*bars + 3) - titleLen) / 2; 
+    printf("\n");
+    for (int i=0; i<leftSpacing; i++) {
+        printf(" ");
+    }
+    printf("%s\n", title);
+    printf("╭─");
+    for (int i=0; i<bars; i++) {
+        printf("───────");
+    }
+    printf("╮\n");
+    for (int y=height-1; y>=0; y--) {
+        printf("│ ");
+        for (int i=0; i<bars; i++) {
+            if (barHeights[i]+1 == y) {
+                printf("%5.2f  ", matrix->cpu[i]);
+            } else if (barHeights[i] == y) {
+                printf("╭────╮ ");
+            } else if (barHeights[i] > y) {
+                printf("│    │ ");
+            } else {
+                printf("       ");
+            }
+        }
+        if (y == height-2) {
+            printf("┤ 1.00\n");
+        } else if (y == (height-2)/2) {
+            printf("┤ 0.50\n");
+        } else if (y == 0) {
+            printf("┤ 0.00\n");
+        } else {
+            printf("│     \n");
+        }
+    }
+    printf("╰─");
+    for (int i=0; i<bars; i++) {
+        printf("┴────┴─");
+    }
+    printf("╯\n  ");
+    for (int i=0; i<bars; i++) {
+        printf("  %02d   ", i);
+    }
+    printf("\n\n");
+    free(barHeights);
+}
+
 __global__ void setMatrixToZeroGpu(float* matrix) {
     matrix[blockIdx.x*blockDim.x + threadIdx.x] = 0;
 }
@@ -207,13 +261,13 @@ __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float c
 }
 
 __global__ void averagePoolGpu(float* input, float* output, int amount) {
-    int i = blockIdx.x;
-    int j = threadIdx.x;
-    int n = blockDim.x;
+    int i = blockIdx.x; // 0
+    int j = threadIdx.x; // 1
+    int n = blockDim.x; // 2
     output[i*n + j] = 0;
-    for (int di=0; di<amount; di++) {
-        for (int dj=0; dj<amount; dj++) {
-            output[i*n + j] += input[(i + di)*n*amount*amount + (j + dj)*amount];
+    for (int di=0; di<amount; di++) { // 0
+        for (int dj=0; dj<amount; dj++) { // 1
+            output[i*n + j] += input[(i*amount + di)*n*amount + j*amount + dj];
         }
     }
     output[i*n + j] /= amount * amount;
@@ -262,18 +316,18 @@ __host__ void applyActivation(FloatMatrix* matrix, Activation activation) {
     }
 }
 
-__global__ void flattenMatricesGpu(float* matrix, float* output, int offset) {
+__global__ void flattenMatricesGpu(float* matrix, float* output, int count, int k) {
     int i = blockIdx.x;
     int j = threadIdx.x;
     int n = blockDim.x;
-    output[offset + i*n + j] = matrix[i*n + j];
+    output[(i*n + j)*count + k] = matrix[i*n + j];
 }
 
 __host__ void flattenMatrices(FloatMatrix** matrices, int count, FloatMatrix* output) {
     int m = matrices[0]->m;
     int n = matrices[0]->n;
-    for (int i=0; i<count; i++) {
-        flattenMatricesGpu<<<m, n>>>(matrices[i]->gpu, output->gpu, m*n*i);
+    for (int k=0; k<count; k++) {
+        flattenMatricesGpu<<<m, n>>>(matrices[k]->gpu, output->gpu, count, k);
     }
 }
 

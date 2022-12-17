@@ -1,50 +1,18 @@
-#include "digit-classifier.h"
+#include "layer.h"
 
-__host__ NeuralNetwork* newNeuralNetwork() {
-    NeuralNetwork* nn = (NeuralNetwork*) malloc(sizeof(NeuralNetwork));
-    nn->firstLayer = NULL;
-    return nn;
-}
-
-__host__ void addLayer(NeuralNetwork* nn, Layer* layer) {
-    if (nn->firstLayer == NULL) {
-        nn->firstLayer = layer;
-        return;
-    }
-    Layer* currentLayer = nn->firstLayer;
-    while (currentLayer->nextLayer != NULL) {
-        currentLayer = currentLayer->nextLayer;
-    }
-    currentLayer->nextLayer = layer;
-}
-
-__host__ FloatMatrix** forward(NeuralNetwork* nn, FloatMatrix** input) {
-    if (nn->firstLayer == NULL)
-        return input; // Empty network, nothing to do.
-    Layer* currentLayer = nn->firstLayer;
-    FloatMatrix** data = input;
-    while (currentLayer != NULL) {
-        evaluateLayer(currentLayer, data);
-        data = currentLayer->output;
-        currentLayer = currentLayer->nextLayer;
-    }
-    cudaDeviceSynchronize();
-    return data;
-}
-
-__host__ void evaluateLayer(Layer* layer, FloatMatrix** input) {
+__host__ void evaluateLayer(Layer* layer, FloatMatrix** input, bool verbose) {
     if (layer->type == CONVOLUTION_LAYER) {
         ConvolutionLayer* convLayer = (ConvolutionLayer*) layer;
-        evaluateConvolutionLayer(convLayer, input); 
+        evaluateConvolutionLayer(convLayer, input, verbose); 
     } else if (layer->type == AVERAGE_POOLING_LAYER) {
         AveragePoolingLayer* avgPoolLayer = (AveragePoolingLayer*) layer;
-        evaluateAveragePoolingLayer(avgPoolLayer, input);
+        evaluateAveragePoolingLayer(avgPoolLayer, input, verbose);
     } else if (layer->type == FLATTEN_LAYER) {
         FlattenLayer* flattenLayer = (FlattenLayer*) layer;
-        evaluateFlattenLayer(flattenLayer, input);
+        evaluateFlattenLayer(flattenLayer, input, verbose);
     } else if (layer->type == DENSE_LAYER) {
         DenseLayer* denseLayer = (DenseLayer*) layer;
-        evaluateDenseLayer(denseLayer, input);
+        evaluateDenseLayer(denseLayer, input, verbose);
     }
 }
 
@@ -88,7 +56,7 @@ __host__ void displayConvolutionLayerKernals(ConvolutionLayer* layer) {
     forEachMatrix(layer->kernals, layer->outChannelCount*layer->inChannelCount, displaySignedMatrix);
 }
 
-__host__ void evaluateConvolutionLayer(ConvolutionLayer* layer, FloatMatrix** input) {
+__host__ void evaluateConvolutionLayer(ConvolutionLayer* layer, FloatMatrix** input, bool verbose) {
     for (int out=0; out<layer->outChannelCount; out++) {
         setMatrixToZero(layer->output[out]);
         for (int in=0; in<layer->inChannelCount; in++) {
@@ -100,6 +68,10 @@ __host__ void evaluateConvolutionLayer(ConvolutionLayer* layer, FloatMatrix** in
         }
         addValueToMatrix(layer->output[out], layer->bias->cpu[out]);
         applyActivation(layer->output[out], layer->activation);
+    }
+    if (verbose) {
+        printf("\nConvolution output:\n");
+        displayConvolutionLayerOutputs(layer);
     }
 }
 
@@ -121,9 +93,13 @@ __host__ AveragePoolingLayer* newAveragePoolingLayer(int channelCount, int m, in
     return layer;
 }
 
-__host__ void evaluateAveragePoolingLayer(AveragePoolingLayer* layer, FloatMatrix** input) {
+__host__ void evaluateAveragePoolingLayer(AveragePoolingLayer* layer, FloatMatrix** input, bool verbose) {
     for (int i=0; i<layer->channelCount; i++) {
         averagePool(input[i], layer->output[i], layer->amount);
+    }
+    if (verbose) {
+        printf("\nAverage pooling output:\n");
+        displayAveragePoolingOutputs(layer);
     }
 }
 
@@ -131,7 +107,6 @@ __host__ void displayAveragePoolingOutputs(AveragePoolingLayer* layer) {
     forEachMatrix(layer->output, layer->channelCount, copyFromDevice);
     forEachMatrix(layer->output, layer->channelCount, displaySignedMatrix);
 }
-
 
 __host__ FlattenLayer* newFlattenLayer(int channelCount, int m, int n) {
     FlattenLayer* layer = (FlattenLayer*) malloc(sizeof(FlattenLayer));
@@ -147,8 +122,13 @@ __host__ FlattenLayer* newFlattenLayer(int channelCount, int m, int n) {
     return layer;
 }
 
-__host__ void evaluateFlattenLayer(FlattenLayer* layer, FloatMatrix** input) {
+__host__ void evaluateFlattenLayer(FlattenLayer* layer, FloatMatrix** input, bool verbose) {
     flattenMatrices(input, layer->channelCount, layer->output[0]);
+    if (verbose) {
+        printf("\nFlatten output:\n");
+        copyFromDevice(layer->output[0]);
+        printMatrix(layer->output[0]);
+    }
 }
 
 __host__ DenseLayer* newDenseLayer(int inSize, int outSize, Activation activation) {
@@ -172,8 +152,13 @@ __host__ void loadDenseLayerParams(DenseLayer* layer, const char* weightsPath, c
     layer->bias = loadMatrix(biasPath, layer->bias->m, layer->bias->n);
 }
 
-__host__ void evaluateDenseLayer(DenseLayer* layer, FloatMatrix** input) {
+__host__ void evaluateDenseLayer(DenseLayer* layer, FloatMatrix** input, bool verbose) {
     matrixMult(layer->weights, *input, *(layer->output));
     addMatrix(layer->bias, *(layer->output));
     applyActivation(*(layer->output), layer->activation);
+    if (verbose) {
+        printf("\nDense layer output:\n");
+        copyFromDevice(layer->output[0]);
+        printMatrix(layer->output[0]);
+    }
 }
