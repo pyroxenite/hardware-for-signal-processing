@@ -153,7 +153,7 @@ __host__ void loadDenseLayerParams(DenseLayer* layer, const char* weightsPath, c
 }
 
 __host__ void evaluateDenseLayer(DenseLayer* layer, FloatMatrix** input, bool verbose) {
-    matrixMult(layer->weights, *input, *(layer->output));
+    multiplyMatrices(layer->weights, *input, *(layer->output));
     addMatrix(layer->bias, *(layer->output));
     applyActivation(*(layer->output), layer->activation);
     if (verbose) {

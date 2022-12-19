@@ -1,96 +1,81 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include <math.h>
 #include "matrix.h"
 #include "layer.h"
 #include "neural-network.h"
+#include "unit-tests.h"
+#include "demo.h"
 
-//#include "tests.cu"
 //#include "demos.cu"
 
-NeuralNetwork* newClassifier() {
-    ConvolutionLayer* conv1 = newConvolutionLayer(1, 6, 5, 5, 28, 28, TANH);
-    loadConvolutionLayerParams(conv1, "data/conv1-weights.bin", "data/conv1-bias.bin");
-
-    ConvolutionLayer* conv2 = newConvolutionLayer(6, 16, 5, 5, 12, 12, TANH);
-    loadConvolutionLayerParams(conv2, "data/conv2-weights.bin", "data/conv2-bias.bin");
-
-    DenseLayer* dense1 = newDenseLayer(16 * 4 * 4, 120, TANH);
-    loadDenseLayerParams(dense1, "data/dense1-weights.bin", "data/dense1-bias.bin");
-
-    DenseLayer* dense2 = newDenseLayer(120, 84, TANH);
-    loadDenseLayerParams(dense2, "data/dense2-weights.bin", "data/dense2-bias.bin");
-
-    DenseLayer* dense3 = newDenseLayer(84, 10, SOFTMAX);
-    loadDenseLayerParams(dense3, "data/dense3-weights.bin", "data/dense3-bias.bin");
-
-    NeuralNetwork* cnn = newNeuralNetwork();
-    // enableVerbose(cnn);
-
-    addLayer(cnn, (Layer*) conv1);
-    addLayer(cnn, (Layer*) newAveragePoolingLayer(6, 24, 24, 2));
-    addLayer(cnn, (Layer*) conv2);
-    addLayer(cnn, (Layer*) newAveragePoolingLayer(16, 8, 8, 2));
-    addLayer(cnn, (Layer*) newFlattenLayer(16, 4, 4));
-    addLayer(cnn, (Layer*) dense1);
-    addLayer(cnn, (Layer*) dense2);
-    addLayer(cnn, (Layer*) dense3);
-
-    return cnn;
+void printHelp() {
+    printf("Les commandes suivantes sont disponibles :\n");
+    printf(" * classify <path> [-verbose]\n");
+    printf(" * test\n");
+    printf(" * demo <demo-name>\n");
+    printf("    * blur\n");
+    printf("    * sobel\n");
+    printf("    * kernal-read\n");
+    printf("    * image-read\n");
+    printf("    * classify-all\n");
 }
- 
-int main() {
+
+int main(int argc, char** argv) {
     // blurDemo();
     // sobelDemo();
-    
-    // paramsReadTest();
-    // imageReadTest();
-    // convolveTest();
-    // biasAndActivationTest();
-    // avgPoolTest();
-    // flattenTest();
-    // matrixMultiplicationTest();
-    // softMaxTest();
 
-    NeuralNetwork* cnn = newClassifier();
+    // printf("%d\n", argc);
 
-    FloatMatrix* input;
-    FloatMatrix* output;
+    if (argc == 2 && strcmp(argv[1], "test") == 0) {
+        runUnitTests();
+        return 0;
+    }
 
-    input = loadMatrix("data/0.bin", 28, 28);
-    displayMatrix(input);
+    if (argc == 3 && strcmp(argv[1], "demo") == 0) {
+        if (strcmp(argv[2], "blur") == 0) {
+            blurDemo();
+            return 0;
+        }
 
-    output = forward(cnn, input);
-    displayVectorAsBarGraph(output, 24, "Prédiction");
+        if (strcmp(argv[2], "sobel") == 0) {
+            sobelDemo();
+            return 0;
+        }
 
-    freeMatrix(input);
-    input = loadMatrix("data/1.bin", 28, 28);
-    displayMatrix(input);
+        if (strcmp(argv[2], "kernal-read") == 0) {
+            kernalReadDemo();
+            return 0;
+        }
 
-    output = forward(cnn, input);
-    displayVectorAsBarGraph(output, 24, "Prédiction");
+        if (strcmp(argv[2], "image-read") == 0) {
+            imageReadDemo();
+            return 0;
+        }  
 
-    freeMatrix(input);
-    input = loadMatrix("data/2.bin", 28, 28);
-    displayMatrix(input);
+        if (strcmp(argv[2], "classify-all") == 0) {
+            classificationDemo();
+            return 0;
+        }
+    }
 
-    output = forward(cnn, input);
-    displayVectorAsBarGraph(output, 24, "Prédiction");
+    if ((argc == 3 || argc == 4) && strcmp(argv[1], "classify") == 0) {
+        const char* path = argv[2];
+        NeuralNetwork* cnn = newDigitClassifier();
 
-    freeMatrix(input);
-    input = loadMatrix("data/3.bin", 28, 28);
-    displayMatrix(input);
+        if (argc == 4 && (strcmp(argv[3], "-verbose") == 0 || strcmp(argv[3], "-v") == 0)) {
+            enableVerbose(cnn);
+        }
 
-    output = forward(cnn, input);
-    displayVectorAsBarGraph(output, 24, "Prédiction");
+        FloatMatrix* input = loadMatrix(path, 28, 28);
+        FloatMatrix* output = forward(cnn, input);
 
-    freeMatrix(input);
-    input = loadMatrix("data/4.bin", 28, 28);
-    displayMatrix(input);
+        printf("%d\n", argmax(output));
+        return 0;
+    }
 
-    output = forward(cnn, input);
-    displayVectorAsBarGraph(output, 24, "Prédiction");
-
+    printHelp();
     return 0;
 }

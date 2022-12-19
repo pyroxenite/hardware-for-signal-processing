@@ -1,5 +1,7 @@
 #include "matrix.h"
 
+/////////////////////////////// Initializers ///////////////////////////////
+
 __host__ FloatMatrix* newMatrix(float* cpu, int m, int n) {
     FloatMatrix* matrix = (FloatMatrix*) malloc(sizeof(FloatMatrix));
     matrix->cpu = cpu;
@@ -8,12 +10,6 @@ __host__ FloatMatrix* newMatrix(float* cpu, int m, int n) {
     cudaMalloc(&(matrix->gpu), sizeof(float) * m * n);
     copyToDevice(matrix);
     return matrix;
-}
-
-__host__ void freeMatrix(FloatMatrix* matrix) {
-    free(matrix->cpu);
-    cudaFree(matrix->gpu);
-    free(matrix);
 }
 
 __host__ FloatMatrix* zeroMatrix(int m, int n) {
@@ -50,11 +46,33 @@ __host__ FloatMatrix** randomMatrices(int count, int m, int n) {
     return matrices;
 }
 
-__host__ void forEachMatrix(FloatMatrix** matrices, int count, void (*fun)(FloatMatrix* matrix)) {
-    for (int i=0; i<count; i++) {
-        fun(matrices[i]);
-    }
+__host__ FloatMatrix* loadMatrix(const char* filename, int m, int n) {
+    float* matrix = (float*) malloc(sizeof(float) * m * n);
+    FILE* file = fopen(filename, "rb");
+    fread((void*) matrix, sizeof(float), m * n, file);
+    fclose(file);
+    return newMatrix(matrix, m, n);
 }
+
+__host__ FloatMatrix* loadVector(const char* filename, int n, int isColumn) {
+    if (isColumn == 0)
+        return loadMatrix(filename, 1, n);
+    else
+        return loadMatrix(filename, n, 1);
+}
+
+__host__ FloatMatrix** loadMatrices(const char* filename, int count, int m, int n) {
+    FloatMatrix** matrices = zeroMatrices(count, m, n);
+    FILE* file = fopen(filename, "rb");
+    for (int i=0; i<count; i++) {
+        fread((void*) matrices[i]->cpu, sizeof(float), m * n, file);
+    }
+    forEachMatrix(matrices, count, copyToDevice);
+    fclose(file);
+    return matrices;
+}
+
+///////////////////////////// Memory management /////////////////////////////
 
 __host__ void copyToDevice(FloatMatrix* matrix) {
     cudaMemcpy(
@@ -74,131 +92,26 @@ __host__ void copyFromDevice(FloatMatrix* matrix) {
     );
 }
 
-__host__ void printMatrix(FloatMatrix* matrix) {
-    int l = matrix->n * matrix->m;
-    printf("Matrix([\n");
-    for (int i=0; i<l; i++) {
-        if (matrix->n == 1) {
-            printf("  [ %5.2f ],\n", matrix->cpu[i]);
-        } else if (i % matrix->n == 0) {
-            printf("  [ %5.2f,", matrix->cpu[i]);
-        } else if (i % matrix->n == matrix->n-1) {
-            printf(" %5.2f ],\n", matrix->cpu[i]);
-        } else {
-            printf(" %5.2f,", matrix->cpu[i]);
-        }
-    }
-    printf("])\n");
+__host__ void freeMatrix(FloatMatrix* matrix) {
+    free(matrix->cpu);
+    cudaFree(matrix->gpu);
+    free(matrix);
 }
 
-__host__ void displayMatrix(FloatMatrix* matrix) {
-    char levels[] = " .:;=+xX@$";
-    int l = matrix->m * matrix->n;
-    printf("╭");
-    for (int i=0; i<matrix->n+1; i++)
-        printf("──");
-    printf("╮\n");
-    for (int i=0; i<l; i++) {
-        if (i % matrix->n == 0) {
-            printf("│ ");
-        }
-        float val = matrix->cpu[i];
-        int lev = (int) (val * 10);
-        if (lev > 9) lev = 9;
-        if (lev < 0) lev = 0;
-        printf("%c%c", levels[lev], levels[lev]);
-        if (i % matrix->n == matrix->n-1) {
-            printf(" │\n");
-        }
-    }
-    printf("╰");
-    for (int i=0; i<matrix->n+1; i++)
-        printf("──");
-    printf("╯\n");
+__host__ void freeMatrices(FloatMatrix** matrices, int count) {
+    forEachMatrix(matrices, count, freeMatrix);
+    free(matrices);
 }
 
-__host__ void displaySignedMatrix(FloatMatrix* matrix) {
-    char levels[] = " .:;=+xX@$";
-    int l = matrix->m * matrix->n;
-    printf("%s╭", RESET);
-    for (int i=0; i<matrix->n+1; i++)
-        printf("──");
-    printf("%s╮\n", RESET);
-    for (int i=0; i<l; i++) {
-        if (i % matrix->n == 0) {
-            printf("│ ");
-        }
-        float val = matrix->cpu[i];
-        int lev = (int) (abs(val) * 10);
-        if (lev > 9) lev = 9;
-        if (lev < 0) lev = 0;
-        if (val > 0)
-            printf("%s%c%c", KBLU, levels[lev], levels[lev]);
-        else 
-            printf("%s%c%c", KRED, levels[lev], levels[lev]);
-        if (i % matrix->n == matrix->n-1) {
-            printf("%s │\n", RESET);
-        }
+///////////////////////////////// Utilities /////////////////////////////////
+
+__host__ void forEachMatrix(FloatMatrix** matrices, int count, void (*fun)(FloatMatrix* matrix)) {
+    for (int i=0; i<count; i++) {
+        fun(matrices[i]);
     }
-    printf("╰");
-    for (int i=0; i<matrix->n+1; i++)
-        printf("──");
-    printf("╯\n");
 }
 
-__host__ void displayVectorAsBarGraph(FloatMatrix* matrix, int height, const char* title) {
-    if (height < 5) height = 5;
-    int bars = matrix->m * matrix->n;
-    int* barHeights = (int*) malloc(sizeof(int) * bars);
-    for (int i=0; i<bars; i++) {
-        barHeights[i] = (int) (matrix->cpu[i] * (height - 1));
-    }
-    int titleLen = strlen(title);
-    int leftSpacing = ((7*bars + 3) - titleLen) / 2; 
-    printf("\n");
-    for (int i=0; i<leftSpacing; i++) {
-        printf(" ");
-    }
-    printf("%s\n", title);
-    printf("╭─");
-    for (int i=0; i<bars; i++) {
-        printf("───────");
-    }
-    printf("╮\n");
-    for (int y=height-1; y>=0; y--) {
-        printf("│ ");
-        for (int i=0; i<bars; i++) {
-            if (barHeights[i]+1 == y) {
-                printf("%5.2f  ", matrix->cpu[i]);
-            } else if (barHeights[i] == y) {
-                printf("╭────╮ ");
-            } else if (barHeights[i] > y) {
-                printf("│    │ ");
-            } else {
-                printf("       ");
-            }
-        }
-        if (y == height-2) {
-            printf("┤ 1.00\n");
-        } else if (y == (height-2)/2) {
-            printf("┤ 0.50\n");
-        } else if (y == 0) {
-            printf("┤ 0.00\n");
-        } else {
-            printf("│     \n");
-        }
-    }
-    printf("╰─");
-    for (int i=0; i<bars; i++) {
-        printf("┴────┴─");
-    }
-    printf("╯\n  ");
-    for (int i=0; i<bars; i++) {
-        printf("  %02d   ", i);
-    }
-    printf("\n\n");
-    free(barHeights);
-}
+/////////////////////////////////// Maths ///////////////////////////////////
 
 __global__ void setMatrixToZeroGpu(float* matrix) {
     matrix[blockIdx.x*blockDim.x + threadIdx.x] = 0;
@@ -223,6 +136,14 @@ __global__ void addValueToMatrixGpu(float* matrix, float value) {
 
 __host__ void addValueToMatrix(FloatMatrix* matrix, float value) {
     addValueToMatrixGpu<<<matrix->m, matrix->n>>>(matrix->gpu, value);
+}
+
+__global__ void scaleMatrixGpu(float* matrix, float value) {
+    matrix[blockIdx.x*blockDim.x + threadIdx.x] *= value;
+}
+
+__host__ void scaleMatrix(FloatMatrix* matrix, float value) {
+    scaleMatrixGpu<<<matrix->m, matrix->n>>>(matrix->gpu, value);
 }
 
 __global__ void convolveGpu(float* image, float* kernal, float* result, int im_m, int im_n, int ker_m, int ker_n) {
@@ -261,12 +182,12 @@ __host__ void drawCircle(FloatMatrix* matrix, float x, float y, float r, float c
 }
 
 __global__ void averagePoolGpu(float* input, float* output, int amount) {
-    int i = blockIdx.x; // 0
-    int j = threadIdx.x; // 1
-    int n = blockDim.x; // 2
+    int i = blockIdx.x;
+    int j = threadIdx.x;
+    int n = blockDim.x;
     output[i*n + j] = 0;
-    for (int di=0; di<amount; di++) { // 0
-        for (int dj=0; dj<amount; dj++) { // 1
+    for (int di=0; di<amount; di++) {
+        for (int dj=0; dj<amount; dj++) {
             output[i*n + j] += input[(i*amount + di)*n*amount + j*amount + dj];
         }
     }
@@ -331,7 +252,7 @@ __host__ void flattenMatrices(FloatMatrix** matrices, int count, FloatMatrix* ou
     }
 }
 
-__global__ void matrixMultGpu(float* mat1, float* mat2, float* result, int m, int n, int p) {
+__global__ void multiplyMatricesGpu(float* mat1, float* mat2, float* result, int m, int n, int p) {
     int i = blockIdx.x;
     int j = threadIdx.x;
     result[i*p + j] = 0;
@@ -340,32 +261,145 @@ __global__ void matrixMultGpu(float* mat1, float* mat2, float* result, int m, in
     }
 }
 
-__host__ void matrixMult(FloatMatrix* mat1, FloatMatrix* mat2, FloatMatrix* result) {
-    matrixMultGpu<<<result->m, result->n>>>(mat1->gpu, mat2->gpu, result->gpu, mat1->m, mat2->m, mat2->n);
+__host__ void multiplyMatrices(FloatMatrix* mat1, FloatMatrix* mat2, FloatMatrix* result) {
+    multiplyMatricesGpu<<<result->m, result->n>>>(mat1->gpu, mat2->gpu, result->gpu, mat1->m, mat2->m, mat2->n);
 }
 
-__host__ FloatMatrix* loadMatrix(const char* filename, int m, int n) {
-    float* matrix = (float*) malloc(sizeof(float) * m * n);
-    FILE* file = fopen(filename, "rb");
-    fread((void*) matrix, sizeof(float), m * n, file);
-    fclose(file);
-    return newMatrix(matrix, m, n);
-}
-
-__host__ FloatMatrix* loadVector(const char* filename, int n, int isColumn) {
-    if (isColumn == 0)
-        return loadMatrix(filename, 1, n);
-    else
-        return loadMatrix(filename, n, 1);
-}
-
-__host__ FloatMatrix** loadMatrices(const char* filename, int count, int m, int n) {
-    FloatMatrix** matrices = zeroMatrices(count, m, n);
-    FILE* file = fopen(filename, "rb");
-    for (int i=0; i<count; i++) {
-        fread((void*) matrices[i]->cpu, sizeof(float), m * n, file);
+__host__ int argmax(FloatMatrix* matrix) {
+    int len = matrix->m * matrix->n;
+    int minIndex = 0;
+    for (int i=0; i<len; i++) {
+        if (matrix->cpu[i] > matrix->cpu[minIndex]) {
+            minIndex = i;
+        }
     }
-    forEachMatrix(matrices, count, copyToDevice);
-    fclose(file);
-    return matrices;
+    return minIndex;
+}
+
+///////////////////////////// Display functions /////////////////////////////
+
+__host__ void printMatrix(FloatMatrix* matrix) {
+    int l = matrix->n * matrix->m;
+    printf("Matrix([\n");
+    for (int i=0; i<l; i++) {
+        if (matrix->n == 1) {
+            printf("  [ %5.2f ],\n", matrix->cpu[i]);
+        } else if (i % matrix->n == 0) {
+            printf("  [ %5.2f,", matrix->cpu[i]);
+        } else if (i % matrix->n == matrix->n-1) {
+            printf(" %5.2f ],\n", matrix->cpu[i]);
+        } else {
+            printf(" %5.2f,", matrix->cpu[i]);
+        }
+    }
+    printf("])\n");
+}
+
+__host__ void displayMatrix(FloatMatrix* matrix) {
+    char levels[] = " .:;=+xX@$";
+    int l = matrix->m * matrix->n;
+    printf("╭");
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("╮\n");
+    for (int i=0; i<l; i++) {
+        if (i % matrix->n == 0) {
+            printf("│ ");
+        }
+        float val = matrix->cpu[i];
+        int lev = (int) (val * 10);
+        if (lev > 9) lev = 9;
+        if (lev < 0) lev = 0;
+        printf("%c%c", levels[lev], levels[lev]);
+        if (i % matrix->n == matrix->n-1) {
+            printf(" │\n");
+        }
+    }
+    printf("╰");
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("╯\n");
+}
+
+__host__ void displaySignedMatrix(FloatMatrix* matrix) {
+    char levels[] = " .:;=+xX@$";
+    int l = matrix->m * matrix->n;
+    printf("%s╭", RESET);
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("%s╮\n", RESET);
+    for (int i=0; i<l; i++) {
+        if (i % matrix->n == 0) {
+            printf("│ ");
+        }
+        float val = matrix->cpu[i];
+        int lev = (int) (abs(val) * 10);
+        if (lev > 9) lev = 9;
+        if (lev < 0) lev = 0;
+        if (val > 0)
+            printf("%s%c%c", BLUE, levels[lev], levels[lev]);
+        else 
+            printf("%s%c%c", RED, levels[lev], levels[lev]);
+        if (i % matrix->n == matrix->n-1) {
+            printf("%s │\n", RESET);
+        }
+    }
+    printf("╰");
+    for (int i=0; i<matrix->n+1; i++)
+        printf("──");
+    printf("╯\n");
+}
+
+__host__ void displayVectorAsBarGraph(FloatMatrix* matrix, int height, const char* title) {
+    if (height < 5) height = 5;
+    int bars = matrix->m * matrix->n;
+    int* barHeights = (int*) malloc(sizeof(int) * bars);
+    for (int i=0; i<bars; i++) {
+        barHeights[i] = (int) (matrix->cpu[i] * (height - 1));
+    }
+    int titleLen = strlen(title);
+    int leftSpacing = ((7*bars + 3) - titleLen) / 2; 
+    printf("\n");
+    for (int i=0; i<leftSpacing; i++) {
+        printf(" ");
+    }
+    printf("%s%s%s\n", BOLD, title, RESET);
+    printf("╭─");
+    for (int i=0; i<bars; i++) {
+        printf("───────");
+    }
+    printf("╮\n");
+    for (int y=height-1; y>=0; y--) {
+        printf("│ ");
+        for (int i=0; i<bars; i++) {
+            if (barHeights[i]+1 == y) {
+                printf("%s%s%5.2f%s  ", BLUE, BOLD, matrix->cpu[i], RESET);
+            } else if (barHeights[i] == y) {
+                printf("╭────╮ ");
+            } else if (barHeights[i] > y) {
+                printf("│    │ ");
+            } else {
+                printf("       ");
+            }
+        }
+        if (y == height-2) {
+            printf("┤ %s%s1.00%s\n", BLUE, BOLD, RESET);
+        } else if (y == (height-2)/2) {
+            printf("┤ %s%s0.50%s\n", BLUE, BOLD, RESET);
+        } else if (y == 0) {
+            printf("┤ %s%s0.00%s\n", BLUE, BOLD, RESET);
+        } else {
+            printf("│     \n");
+        }
+    }
+    printf("╰─");
+    for (int i=0; i<bars; i++) {
+        printf("┴────┴─");
+    }
+    printf("╯\n  ");
+    for (int i=0; i<bars; i++) {
+        printf("  %s%s%02d%s   ", BLUE, BOLD, i, RESET);
+    }
+    printf("\n\n");
+    free(barHeights);
 }
