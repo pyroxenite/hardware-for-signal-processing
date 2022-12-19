@@ -29,6 +29,10 @@ int main(int argc, char** argv) {
 
     // printf("%d\n", argc);
 
+    if (argc == 1) {
+        printHelp();
+    }
+
     if (argc == 2 && strcmp(argv[1], "test") == 0) {
         runUnitTests();
         return 0;
@@ -76,6 +80,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    printf("Commande non reconnue. ");
     printHelp();
     return 0;
 }
