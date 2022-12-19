@@ -5,7 +5,7 @@
 #define __NEURAL_NETWORK__
 
 /**
-* Représente un réseau de neuronnes.
+* Représente un réseau de neurones.
 */
 typedef struct NeuralNetwork {
     /** Première couche du réseau. */
@@ -16,14 +16,14 @@ typedef struct NeuralNetwork {
 } NeuralNetwork;
 
 /**
-* Initialise un réseau de neuronnes vide.
-* @return Le réseau de neuronnes.
+* Initialise un réseau de neurones vide.
+* @return Le réseau de neurones.
 */
 __host__ NeuralNetwork* newNeuralNetwork();
 
 /**
-* Ajoute une couche à un réseau de neuronnes. Elle est insérée en dernière position.
-* @param nn    Le réseau de neuronnes.
+* Ajoute une couche à un réseau de neurones. Elle est insérée en dernière position.
+* @param nn    Le réseau de neurones.
 * @param layer La couche à ajouter.
 */
 __host__ void addLayer(
@@ -33,17 +33,17 @@ __host__ void addLayer(
 
 /**
 * Active l'affichage des sorties des couches au moment de l'évaluation du réseau
-* de neuronnes.
-* @param nn Le réseau de neuronnes.
+* de neurones.
+* @param nn Le réseau de neurones.
 */
 __host__ void enableVerbose(
     NeuralNetwork* nn
 );
 
 /**
-* Évalue toutes les couches du réseau de neuronnes et renvoie un pointeur vers la 
+* Évalue toutes les couches du réseau de neurones et renvoie un pointeur vers la 
 * sortie de la dernière couche évaluée.
-* @param nn    Le réseau de neuronnes.
+* @param nn    Le réseau de neurones.
 * @param input La matrice en entrée.
 * @return      Le premier canal de la sortie de la dernière couche évaluée.
 */
@@ -51,6 +51,13 @@ __host__ FloatMatrix* forward(
     NeuralNetwork* nn, 
     FloatMatrix* input
 );
+
+/**
+* Libère toute la mémoire allouée au réseau de neurones.
+* @param nn   Le réseau de neurones.
+*/
+__host__ void freeNeuralNetwork(NeuralNetwork* nn);
+
 
 /**
 * Initalise un réseau convolutif permettant de classifier des chiffres manuscrits

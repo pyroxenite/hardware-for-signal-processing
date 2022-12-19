@@ -87,6 +87,9 @@ int main(int argc, char** argv) {
             printf("%d\n", argmax(output));
         }
 
+        freeMatrix(input);
+        freeNeuralNetwork(cnn);
+
         return 0;
     }
 

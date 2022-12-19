@@ -145,4 +145,5 @@ void classificationDemo() {
     }
 
     freeMatrices(numbers, 10);
+    freeNeuralNetwork(cnn);
 }

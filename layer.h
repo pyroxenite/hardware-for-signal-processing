@@ -129,6 +129,13 @@ __host__ void evaluateLayer(
 );
 
 /**
+* Libère la mémoire allouée à une couche ainsi que toutes les matrices 
+* associées.
+* @param layer  La couche dont on libère la mémoire.
+*/
+__host__ void freeLayer(Layer* layer);
+
+/**
 * Initialise une couche convolutive.
 * @param inChannelCount  Nombre de canaux en entrée.
 * @param outChannelCount Nombre de canaux en sortie.

@@ -24,8 +24,6 @@ __host__ void enableVerbose(NeuralNetwork* nn) {
 }
 
 __host__ FloatMatrix* forward(NeuralNetwork* nn, FloatMatrix* input) {
-    if (nn->firstLayer == NULL)
-        return input; // Empty network, nothing to do.
     Layer* currentLayer = nn->firstLayer;
     FloatMatrix** data = &input;
     while (currentLayer != NULL) {
@@ -36,6 +34,18 @@ __host__ FloatMatrix* forward(NeuralNetwork* nn, FloatMatrix* input) {
     cudaDeviceSynchronize();
     copyFromDevice(*data);
     return *data;
+}
+
+__host__ void freeNeuralNetwork(NeuralNetwork* nn) {
+    Layer* currentLayer = nn->firstLayer;
+    Layer* nextLayer;
+    while (currentLayer->nextLayer != NULL) {
+        nextLayer = currentLayer->nextLayer;
+        freeLayer(currentLayer);
+        currentLayer = nextLayer;
+    }
+    freeLayer(nextLayer);
+    free(nn);
 }
 
 NeuralNetwork* newDigitClassifier() {

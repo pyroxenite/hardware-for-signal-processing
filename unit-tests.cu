@@ -259,6 +259,8 @@ bool classificationTest() {
 
     free(input);
 
+    freeNeuralNetwork(cnn);
+
     return true;
 }
 
