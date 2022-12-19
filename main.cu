@@ -9,28 +9,23 @@
 #include "unit-tests.h"
 #include "demo.h"
 
-//#include "demos.cu"
-
 void printHelp() {
     printf("Les commandes suivantes sont disponibles :\n");
     printf(" * classify <path> [--verbose | --bar-graph]\n");
     printf(" * test\n");
     printf(" * demo <demo-name>\n");
+    printf("    * classify-all\n");
     printf("    * blur\n");
     printf("    * sobel\n");
     printf("    * kernal-read\n");
     printf("    * image-read\n");
-    printf("    * classify-all\n");
 }
 
 int main(int argc, char** argv) {
-    // blurDemo();
-    // sobelDemo();
-
-    // printf("%d\n", argc);
 
     if (argc == 1) {
         printHelp();
+        return 0;
     }
 
     if (argc == 2 && strcmp(argv[1], "test") == 0) {

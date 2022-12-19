@@ -11,12 +11,13 @@ Ce qui génère un exécutable `a.out`, que l'on exécute par `./a.out`.
 
 Les sous-commandes suivantes sont disponibles :
  * `classify <path> [--verbose | --bar-graph]` qui classifie une image (en binaire `float32`) à l'emplacement `path`. L'option `--verbose` affiche les sorties des couches intermédiares ;
+ * `display <path>` qui affiche l'image à l'emplacement `path` ;
  * `test` qui exécute les testes unitaires ;
  * `demo <demo-name>` qui exécute une démo parmi :
     * `blur` : flou par convolution ;
     * `sobel` : application d'un filtre de Sobel ;
     * `kernal-read` : lecture et affichage de noyaux de convolution ;
-    * `image-read` : lecture et affichage de images de teste ;
+    * `image-read` : lecture et affichage des images de teste ;
     * `classify-all` : affiche et classifie une image par chiffre de 0 à 9.
 
 Par exemple :
