@@ -13,7 +13,7 @@
 
 void printHelp() {
     printf("Les commandes suivantes sont disponibles :\n");
-    printf(" * classify <path> [-verbose]\n");
+    printf(" * classify <path> [--verbose | --bar-graph]\n");
     printf(" * test\n");
     printf(" * demo <demo-name>\n");
     printf("    * blur\n");
@@ -65,18 +65,33 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (argc == 3 && strcmp(argv[1], "display") == 0) {
+        const char* path = argv[2];
+        FloatMatrix* input = loadMatrix(path, 28, 28);
+
+        displayMatrix(input);
+
+        free(input);
+        return 0;
+    }
+
     if ((argc == 3 || argc == 4) && strcmp(argv[1], "classify") == 0) {
         const char* path = argv[2];
         NeuralNetwork* cnn = newDigitClassifier();
 
-        if (argc == 4 && (strcmp(argv[3], "-verbose") == 0 || strcmp(argv[3], "-v") == 0)) {
+        if (argc == 4 && (strcmp(argv[3], "--verbose") == 0 || strcmp(argv[3], "-v") == 0)) {
             enableVerbose(cnn);
         }
 
         FloatMatrix* input = loadMatrix(path, 28, 28);
         FloatMatrix* output = forward(cnn, input);
 
-        printf("%d\n", argmax(output));
+        if (argc == 4 && (strcmp(argv[3], "--bar-graph") == 0)) {
+            displayVectorAsBarGraph(output, 24, "Distibution de probabilité");
+        } else {
+            printf("%d\n", argmax(output));
+        }
+
         return 0;
     }
 
