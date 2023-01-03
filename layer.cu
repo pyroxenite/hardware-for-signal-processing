@@ -22,21 +22,19 @@ __host__ void freeLayer(Layer* layer) {
         freeMatrices(convLayer->output, convLayer->outChannelCount);
         freeMatrices(convLayer->kernals, convLayer->outChannelCount * convLayer->inChannelCount);
         freeMatrix(convLayer->bias);
-        free(layer);
     } else if (layer->type == AVERAGE_POOLING_LAYER) {
         AveragePoolingLayer* avgPoolLayer = (AveragePoolingLayer*) layer;
         freeMatrices(avgPoolLayer->output, avgPoolLayer->channelCount);
-        free(layer);
     } else if (layer->type == FLATTEN_LAYER) {
         FlattenLayer* flattenLayer = (FlattenLayer*) layer;
         freeMatrices(flattenLayer->output, 1);
-        free(layer);
     } else if (layer->type == DENSE_LAYER) {
         DenseLayer* denseLayer = (DenseLayer*) layer;
         freeMatrices(denseLayer->output, 1);
         freeMatrix(denseLayer->weights);
         freeMatrix(denseLayer->bias);
     }
+    free(layer);
 }
 
 __host__ ConvolutionLayer* newConvolutionLayer(
